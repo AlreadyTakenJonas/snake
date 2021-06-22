@@ -8,6 +8,7 @@ Created on Mon Jun 21 22:46:06 2021
 
 # Used for coordinates
 import numpy as np
+from random import randint
 
 class Snake:
     """
@@ -20,7 +21,8 @@ class Snake:
     BOARD_SIZE = ()
     # Set in __init__ and changed during the game. Position of the body of the snake. List of tupels. Every np.array ist one point on the board. The first element is the head. The last element is the tail.
     position_snake_body = []
-    
+    # Set in _spawm_apple. Holds a numpy vector with the position of the apple on the game board.
+    position_apple = np.array([])
     
     def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3):
         #
@@ -42,14 +44,58 @@ class Snake:
             raise ValueError("The snake must have a length of at least 1.")
         # Initialise position and length of the snake
         # The snake head will be placed in the middle of the first row. The body will be placed of screen.
-        self.position_snake_body = [ np.array([self.BOARD_SIZE[0]//2, i]) for i in range(0, -initial_length, -1) ]
+        self.position_snake_body = [ np.array([self._get_max_x()//2, i]) for i in range(0, -initial_length, -1) ]
         
         #   PLACE THE FIRST APPLE
         self._spawn_apple()
         
+    def _get_max_x(self):
+        """
+        This function returns the x-coordinate of the point with the biggest x-coordinate on the game board.
+
+        Returns
+        -------
+        int
+            x-coordinate of the point with the biggest x-coordinate on the game board.
+
+        """
+        return self.BOARD_SIZE[0]-1
+    
+    def _get_max_y(self):
+        """
+        This function returns the y-coordinate of the point with the biggest y-coordinate on the game board.
+
+        Returns
+        -------
+        int
+            y-coordinate of the point with the biggest x-coordinate on the game board.
+
+        """
+        return self.BOARD_SIZE[1]-1
+        
     def _spawn_apple(self):
-        # TODO: DOCSTRING, Spawn a new apple. Make sure it's inside the board and does not collide with the snake
-        pass
+        """
+        This function will position the apple at a random position on the game board. Positions occupied by the snakes body will be avoided.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Generate random positions on the game board until one is found, that is not occupied by the snake
+        while True:
+            # Generate a random position on the game board
+            new_position_x = randint(0, self._get_max_x())
+            new_position_y = randint(0, self._get_max_y())
+            # Convert random position to numpy array
+            new_position = np.array([new_position_x, new_position_y])
+            
+            # Check if the random position is part of the list position_snake_body (all positions occupied by the snake). If it is not, break the loop.
+            if not np.isin(new_position, self.position_snake_body).all():
+                break
+        
+        # Overwrite the current position of the apple with the new position
+        self.position_apple = new_position
         
     def _detect_collision_withObstacle(self):
         # TODO: DOCSTRING, Check collision detection with walls and snake body
