@@ -32,6 +32,16 @@ class Snake:
     position_apple = np.array([])
     # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
     _snake_dead = False
+    # Integer keeping track of the players points
+    score = 0
+    # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
+    step_counter = 0
+    # Maximal score player can get for an apple. The longer it takes to get the apple, the less points he gets.
+    MAXIMAL_SCORE_PER_APPLE = 50
+    # Minimal score a player can get for an apple. The faster he gets to the apple, the more points he gets.
+    MINIMAL_SCORE_PER_APPLE = 10
+    # The more steps the player needs to get the apple, the less points he makes. If he makes more than 20, he will get the MINIMAL_SCORE_PER_APPLE
+    MAXIMAL_STEP_COUNT = 20
     
     def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3):
         #
@@ -128,7 +138,28 @@ class Snake:
         
     def _detect_collision_withObstacle(self):
         # TODO: DOCSTRING, Check collision detection with walls and snake body
+        # Detect if player has one the game (write own function for that? Check that in _get_game_state()?)
         pass
+    
+    def _update_score(self):
+        """
+        Compute new score and update the score attribute. The longer the player needs to get to the apple, the less points he gets for the apple.
+        There is a maximal and a minimal number of points the player can get for one apple.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Compute the number of points the player should get. This formula makes sure that the number of points decreases with the step counter and that there is a minimal and a maximal possible point value
+        points = (self.MAXIMAL_SCORE_PER_APPLE-self.MINIMAL_SCORE_PER_APPLE) * np.exp(-self.step_counter/self.MAXIMAL_STEP_COUNTM) + self.MINIMAL_SCORE_PER_APPLE
+        # Round the points to the neares multiple of 5.
+        points = 5 * round(points/5)
+        # Update score count
+        self.score += points
+        # Reset step counter
+        self.step_counter = 0
+        
         
     def move(self, direction:"NORTH, EAST, SOUTH, WEST, LEFT, FORWARD, RIGHT"):
         """
@@ -176,6 +207,9 @@ class Snake:
         if self._snake_dead==True:
             return self._snake_dead
         
+        # Increase the step counter by one. This is used for the score computation. The faster the player gets the apple, the more points he gets.
+        self.step_counter += 1
+        
         # Compute the future position of the snakes head
         future_snake_head_position = self.position_snake_body[0] + direction
         # Add a new element at the beginning of the list for the new position of the snakes head
@@ -188,6 +222,7 @@ class Snake:
             # Spawn a new apple if the snake has reached the apple
             # Do not delete the tail of the snake. The snake will become longe because of that
             self._spawn_apple()
+            self._update_score()
         else:
             # Delete the tail of the snake if the apple was not reached. This will make the snake move and keep their length, because the head of the snake was already moved.
             del self.position_snake_body[-1]
