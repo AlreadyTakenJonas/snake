@@ -191,6 +191,23 @@ class Snake:
 
         """
         #   CHECK IF INPUT IS A VALID DIRECTION
+        #
+        # Check if the parameter direction is a valid relative direction. Valid relative directions are the integerss LEFT, FORWARD and RIGHT (defined above the class Snake.)
+        if not isinstance(direction, int) or not direction in [LEFT, FORWARD, RIGHT]:
+            # Check if the parameter direction is a valid absolute direction. Valid absolute directions are the np.ndarrays NORTH, EAST, SOUTH and WEST (defined above the class Snake.)
+            if not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
+                # Parameter direction is neither relative nor absolute direction. Raise ValueError
+                raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
+          
+        # CHECK IF ABSOLUTE DIRECTION POINTS AGAINST CURRENT MOVING DIRECTION
+        #
+        # Get current direction by subtraction the second and the first element of the snake body.
+        current_direction = self.position_snake_body[1]-self.position_snake_body[0]
+        # Is the passed direction an absolute direction?
+        if isinstance(direction, np.ndarray) or self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
+            # Is the passed direction opposite to the current direction? If so ignore the user input and move the snake one step FORWARD.
+            if (direction==-1*current_direction).all() == True: direction = FORWARD
+            
         #   CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
         #
         # Check if the parameter direction is a valid relative direction. Valid relative directions are the ints LEFT, FORWARD and RIGHT (defined above the class Snake.)
@@ -198,8 +215,6 @@ class Snake:
             #
             # CONVERT RELATIVE DIRECTIONS TO ABSOLUTE DIRECTIONS
             #
-            # Get current direction by subtraction the second and the first element of the snake body.
-            current_direction = self.position_snake_body[1]-self.position_snake_body[0]
             # Define a rotation angle based on the relative direction (-90°, 0°, +90°)
             rotation_angle = direction*np.pi/2
             # Rotate the current absolute direction with a rotation matrix. Matrix will rotate the current_direction by rotation_angle radians.
@@ -211,11 +226,15 @@ class Snake:
         elif not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Parameter direction is neither relative nor absolute direction. Raise ValueError
             raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
-        
+            
+        #   IS THE GAME OVER?
+        #
         # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
         if self._snake_dead==True:
             return self._snake_dead
-        
+
+        #   MOVE THE SNAKE AND DETECT COLLISIONS
+        #
         # Increase the step counter by one. This is used for the score computation. The faster the player gets the apple, the more points he gets.
         self.step_counter += 1
         
@@ -253,11 +272,11 @@ if __name__ == "__main__":
     #
     snake = Snake()
     
-    #snake.move(LEFT)
+    snake.move(LEFT)
     #snake.move(FORWARD)
     #snake.move(RIGHT)
-    #snake.move(NORTH)
-    #snake.move(SOUTH)
+    snake.move(NORTH)
+    snake.move(SOUTH)
     #snake.move(EAST)
     #snake.move(WEST)
     
