@@ -30,6 +30,8 @@ class Snake:
     position_snake_body = []
     # Set in _spawm_apple. Holds a numpy vector with the position of the apple on the game board.
     position_apple = np.array([])
+    # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
+    _snake_dead = False
     
     def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3):
         #
@@ -127,14 +129,27 @@ class Snake:
     def _detect_collision_withObstacle(self):
         # TODO: DOCSTRING, Check collision detection with walls and snake body
         pass
-    
-    def _detect_collision_withApple(self, relative_direction:int):
-        # TODO: DOCSTRING, will the snake collide with the apple in when it's gonna move? If yes, update score, spawn a new apple and update tell move() to lengthen the tail of the snake.
-        pass
-    
+        
     def move(self, direction:"NORTH, EAST, SOUTH, WEST, LEFT, FORWARD, RIGHT"):
-        # TODO: DOCSTRING, Move one step, call collision detection, check if apple was eaten, enlarge snake if necessary, increase score if necessary, Return True if the snake lives and False if it dies.
-        #
+        """
+        TODO
+
+        Parameters
+        ----------
+        direction : NORTH, EAST, SOUTH, WEST, LEFT, FORWARD, RIGHT
+            DESCRIPTION.
+
+        Raises
+        ------
+        ValueError
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
         #   CHECK IF INPUT IS A VALID DIRECTION
         #   CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
         #
@@ -156,9 +171,33 @@ class Snake:
         elif not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Parameter direction is neither relative nor absolute direction. Raise ValueError
             raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
+        
+        # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
+        if self._snake_dead==True:
+            return self._snake_dead
+        
+        # Compute the future position of the snakes head
+        future_snake_head_position = self.position_snake_body[0] + direction
+        # Add a new element at the beginning of the list for the new position of the snakes head
+        self.position_snake_body.insert(0, future_snake_head_position)
+        
+        # Check if the snake has reached the apple
+        collision_with_apple = (future_snake_head_position == self.position_apple).all()
+        
+        if collision_with_apple == True:
+            # Spawn a new apple if the snake has reached the apple
+            # Do not delete the tail of the snake. The snake will become longe because of that
+            self._spawn_apple()
+        else:
+            # Delete the tail of the snake if the apple was not reached. This will make the snake move and keep their length, because the head of the snake was already moved.
+            del self.position_snake_body[-1]
             
-        # TODO: move snake, collision detection with wall, snake and apple.
-    
+        # Check if the snake is hitting the wall or itself and update self._snake_dead
+        self._detect_collision_withObstacle()
+        
+        # Return the status of the snake: True=GameOver, False=Snake is alive and well.
+        return self._snake_dead
+
     def get_game_state(self):
         # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
         pass
@@ -170,13 +209,13 @@ if __name__ == "__main__":
     #
     snake = Snake()
     
-    snake.move(LEFT)
-    snake.move(FORWARD)
-    snake.move(RIGHT)
-    snake.move(NORTH)
-    snake.move(SOUTH)
-    snake.move(EAST)
-    snake.move(WEST)
+    #snake.move(LEFT)
+    #snake.move(FORWARD)
+    #snake.move(RIGHT)
+    #snake.move(NORTH)
+    #snake.move(SOUTH)
+    #snake.move(EAST)
+    #snake.move(WEST)
     
     #snake.move([WEST, EAST])
     #snake.move(90)
