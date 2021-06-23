@@ -36,14 +36,8 @@ class Snake:
     score = 0
     # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
     step_counter = 0
-    # Maximal score player can get for an apple. The longer it takes to get the apple, the less points he gets.
-    MAXIMAL_SCORE_PER_APPLE = 50
-    # Minimal score a player can get for an apple. The faster he gets to the apple, the more points he gets.
-    MINIMAL_SCORE_PER_APPLE = 10
-    # The more steps the player needs to get the apple, the less points he makes. If he makes more than 20, he will get the MINIMAL_SCORE_PER_APPLE
-    MAXIMAL_STEP_COUNT = 20
     
-    def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3):
+    def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20):
         #
         #   TODO: DOCSTRING, Initialise game score
         #
@@ -51,8 +45,8 @@ class Snake:
         #   SET BOARD SIZE
         # 
         # Check the requested size of the board
-        if not (board_width > 0 and board_height > 0):
-            raise ValueError("The board width and height must be bigger than 0!")
+        if not isinstance(board_width, int) or not isinstance(board_height, int): raise ValueError("Height and width of the game board must be integer!")
+        if not (board_width > 1 and board_height > 1): raise ValueError("The board width and height must be bigger than 1!")
         # Set the size of the board
         self.BOARD_SIZE = (board_width, board_height)
         
@@ -60,14 +54,29 @@ class Snake:
         #
         # Set the initial size and position of the snake
         # The snake may not be shorter than 2. If it's to short, moving with relative directions doesn't work anymore.
-        if not initial_length >= 2:
-            raise ValueError("The snake must have a length of at least 1.")
+        if not isinstance(initial_length, int) or not initial_length >= 2: raise ValueError("The snake must have a length of at least 1 (only integer values allowed).")
         # Initialise position and length of the snake
         # The snake head will be placed in the middle of the first row. The body will be placed of screen.
         self.position_snake_body = [ np.array([self._get_max_x()//2, i]) for i in range(0, -initial_length, -1) ]
         
         #   PLACE THE FIRST APPLE
         self._spawn_apple()
+        
+        #   INITIALISE CONSTANTS FOR COMPUTING THE SCORE
+        #
+        # Check input for type
+        if not isinstance(max_score_per_apple, int) or not isinstance(min_score_per_apple, int) or not isinstance(max_step_to_apple, int): 
+            raise ValueError("max_score_per_apple, min_score_per_apple and max_step_to_apple must be integers!")
+        # Check if input makes sense
+        if min_score_per_apple < 1: raise ValueError("min_score_per_apple can't be smaller than 1.")
+        if max_score_per_apple < min_score_per_apple: raise ValueError("max_score_per_apple must be equal or bigger than min_score_per_apple!")
+        if max_step_to_apple < 1: raise ValueError("max_step_to_apple must be at least 1.")
+        # Maximal score player can get for an apple. The longer it takes to get the apple, the less points he gets.
+        self.MAXIMAL_SCORE_PER_APPLE = max_score_per_apple
+        # Minimal score a player can get for an apple. The faster he gets to the apple, the more points he gets.
+        self.MINIMAL_SCORE_PER_APPLE = min_score_per_apple
+        # The more steps the player needs to get the apple, the less points he makes. If he makes more than 20, he will get the MINIMAL_SCORE_PER_APPLE
+        self.MAXIMAL_STEP_COUNT      = max_step_to_apple
         
     def _get_max_x(self):
         """
@@ -152,7 +161,7 @@ class Snake:
 
         """
         # Compute the number of points the player should get. This formula makes sure that the number of points decreases with the step counter and that there is a minimal and a maximal possible point value
-        points = (self.MAXIMAL_SCORE_PER_APPLE-self.MINIMAL_SCORE_PER_APPLE) * np.exp(-self.step_counter/self.MAXIMAL_STEP_COUNTM) + self.MINIMAL_SCORE_PER_APPLE
+        points = (self.MAXIMAL_SCORE_PER_APPLE-self.MINIMAL_SCORE_PER_APPLE) * np.exp(-(self.step_counter-1)/self.MAXIMAL_STEP_COUNT) + self.MINIMAL_SCORE_PER_APPLE
         # Round the points to the neares multiple of 5.
         points = 5 * round(points/5)
         # Update score count
