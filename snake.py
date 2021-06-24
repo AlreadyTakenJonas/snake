@@ -278,7 +278,7 @@ class Snake:
         # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
         gameBoard = [ [ FLOOR for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
         for snakeBody in self.position_snake_body:
-            if ( snakeBody >= 0 ).all() == True:
+            if ( snakeBody >= 0 ).all() and ( snakeBody < np.array(self.BOARD_SIZE) ).all():
                 gameBoard[snakeBody[1]][snakeBody[0]] = SNAKE
             
         gameBoard[self.position_apple[1]][self.position_apple[0]] = APPLE
@@ -307,18 +307,140 @@ class Snake:
         print("└"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┘")
         # Print score and if your dead
         print(f"game over={game_state['gameover']}; score={game_state['score']}")
-        
+#        
+#
+#   END OF CLASS SNAKE
+#
+#   
     
-    
-if __name__ == "__main__":
+def run_snake():
     #
     #   Implement the while-loop, user input detection and rendering-
     #
-
+    
+    # >>>> DEFINE MACROS (COLOR, SCREEN SIZE, ...)
+    #
+    
+    # Color
+    BACKGROUND_COLOR = (85,102,0)
+    APPLE_COLOR = (102,17,0)
+    SNAKE_COLOR = (51,51,0)
+    
+    # Screen and game board size
+    SCREEN_SIZE = (800,450)
+    BOX_SIZE = 20
+    SNAKE_MARGIN = 1
+    SNAKE_BORDER_RADIUS = 2
+    APPLE_MARGIN = 4
+    APPLE_BORDER_RADIUS = 2
+    BOARD_WIDTH, BOARD_HEIGHT = [ int(i/BOX_SIZE) for i in SCREEN_SIZE ]
+    
+    # Frame Rate
+    FPS = 15
+    
+    #
+    # <<<< DEFINE MACROS
+    
+    # >>>> SETUP GAME
+    #
+    # Setup the game clock
+    frame_rate = pygame.time.Clock()
+    
+    # Setup green 800x450 display with caption
+    SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+    SCREEN.fill(BACKGROUND_COLOR)
+    pygame.display.set_caption("Objectively Good Snake")
+    
+    # Get an instance of the snake game
+    snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT )
+    #
+    # <<<< SETUP GAME
+    
+    
+    # >>>> START GAME LOOP
+    running = True
+    while running:
+        
+        # Clear the screen
+        SCREEN.fill(BACKGROUND_COLOR)
+        
+        # Reset walking direction
+        direction = FORWARD
+        
+        # >>>> HANDLE EVENTS AND KEY PRESSES
+        #
+        for event in pygame.event.get():
+            
+            # Quit if the user closes the gui.
+            if event.type == pygame.locals.QUIT:
+                running = False
+                break
+        
+        # Change the walking direction if a key is pressed
+        key_input = pygame.key.get_pressed()
+        if key_input[pygame.K_UP]:      
+            direction = NORTH
+        elif key_input[pygame.K_RIGHT]:   
+            direction = EAST
+        elif key_input[pygame.K_DOWN]:    
+            direction = SOUTH
+        elif key_input[pygame.K_LEFT]:    
+            direction = WEST
+        #
+        # <<<< HANDLE EVENTS AND KEY PRESSES
+        
+        # Move the snake by one step
+        snake_controller.move(direction)
+        
+        # Get the current state of the game
+        game_state = snake_controller.get_game_state()
+        
+        # >>>> RENDER SNAKE AND APPLE
+        #
+        # Draw the apple
+        position_apple = tuple(game_state["apple"]*BOX_SIZE+APPLE_MARGIN)
+        apple = pygame.Rect(position_apple, (BOX_SIZE-2*APPLE_MARGIN, BOX_SIZE-2*APPLE_MARGIN))
+        pygame.draw.rect(SCREEN, APPLE_COLOR, apple, border_radius=APPLE_BORDER_RADIUS)
+        
+        # Draw the snake
+        for snake_element in game_state["snakeBody"]:
+            position_snake = tuple(snake_element*BOX_SIZE+SNAKE_MARGIN)
+            snake = pygame.Rect(position_snake, (BOX_SIZE-2*SNAKE_MARGIN, BOX_SIZE-2*SNAKE_MARGIN))
+            pygame.draw.rect(SCREEN, SNAKE_COLOR, snake, border_radius=SNAKE_BORDER_RADIUS)
+        
+        # So far the body of the snake is a bunch of unconnected boxes. This loop connects them together by drawing new boxes between the segments of the snake.
+        for snake_current, snake_next in zip(game_state["snakeBody"][:-1], game_state["snakeBody"][1:]):
+            direction_snake_tail = (snake_next-snake_current)
+            snake_tail_connector = pygame.Rect((0,0), (BOX_SIZE-2*SNAKE_MARGIN, BOX_SIZE-2*SNAKE_MARGIN))
+            snake_tail_connector.center = snake_current*BOX_SIZE + BOX_SIZE/2 + direction_snake_tail*BOX_SIZE/2
+            pygame.draw.rect(SCREEN, SNAKE_COLOR, snake_tail_connector)
+        #
+        # <<<< RENDER SNAKE AND APPLE
+        
+        # Update display
+        pygame.display.update()
+        # Tick the clock
+        frame_rate.tick(FPS)
+    #
+    # <<<< END GAME LOOP
+    
+    
+if __name__ == "__main__":
+    
     # Import game engine pygame
     import pygame
-    
+    import pygame.locals    
     # Initialise game engine
     pygame.init()
     
+    try:
+        # Run the game
+        run_snake()
+    except Exception as e:
+        # Catch any errors, close the game and reraise the exception
+        print("The Game crashed!")
+        pygame.quit()
+        raise e
     
+    # Exit the game
+    pygame.quit()
