@@ -145,18 +145,7 @@ class Snake:
                 break
         
         # Overwrite the current position of the apple with the new position
-        self.position_apple = new_position
-        
-    def _detect_collision_withObstacle(self):
-        # Get the position of the snakes head
-        snake_head = self.position_snake_body[0]
-        # COLLISION WIHT WALL: Check if head of snake is outside of the board game.
-        if (snake_head >= np.array(self.BOARD_SIZE) ).any() or ( snake_head < np.zeros(2) ).any() == True:
-            self._snake_dead = True
-        # COLLISION WIHT SNAKE: Check if the head of the snake matches the position of any other part of the snake.
-        elif self._is_array_in_list(snake_head, self.position_snake_body[1:]) == True:
-            self._snake_dead = True
-        
+        self.position_apple = new_position        
     
     def _update_score(self):
         """
@@ -176,7 +165,6 @@ class Snake:
         self.score += points
         # Reset step counter
         self.step_counter = 0
-        
         
     def move(self, direction:"NORTH, EAST, SOUTH, WEST, LEFT, FORWARD, RIGHT"):
         """
@@ -198,7 +186,7 @@ class Snake:
             DESCRIPTION.
 
         """
-        #   CHECK IF INPUT IS A VALID DIRECTION
+        # >>>> CHECK IF INPUT IS A VALID DIRECTION
         #
         # Check if the parameter direction is a valid relative direction. Valid relative directions are the integerss LEFT, FORWARD and RIGHT (defined above the class Snake.)
         if not isinstance(direction, int) or not direction in [LEFT, FORWARD, RIGHT]:
@@ -215,8 +203,18 @@ class Snake:
         if isinstance(direction, np.ndarray) or self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Is the passed direction opposite to the current direction? If so ignore the user input and move the snake one step FORWARD.
             if (direction==-1*current_direction).all() == True: direction = FORWARD
+        #    
+        # <<<< CHECK INPUT
+        
+        #   IS THE GAME OVER?
+        #
+        # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
+        if self._snake_dead==True:
+            return self._snake_dead
             
-        #   CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
+        # >>>> MOVE SNAKE AND DETECT APPLE
+        #
+        # 1. CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
         #
         # Check if the parameter direction is a valid relative direction. Valid relative directions are the ints LEFT, FORWARD and RIGHT (defined above the class Snake.)
         if type(direction) is int and direction in [LEFT, FORWARD, RIGHT]:
@@ -234,14 +232,8 @@ class Snake:
         elif not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Parameter direction is neither relative nor absolute direction. Raise ValueError
             raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
-            
-        #   IS THE GAME OVER?
-        #
-        # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
-        if self._snake_dead==True:
-            return self._snake_dead
 
-        #   MOVE THE SNAKE AND DETECT COLLISIONS
+        # 2. MOVE THE SNAKE AND DETECT APPLE
         #
         # Increase the step counter by one. This is used for the score computation. The faster the player gets the apple, the more points he gets.
         self.step_counter += 1
@@ -262,9 +254,22 @@ class Snake:
         else:
             # Delete the tail of the snake if the apple was not reached. This will make the snake move and keep their length, because the head of the snake was already moved.
             del self.position_snake_body[-1]
+        #
+        # <<<< MOVE SNAKE AND DETECT APPLE
             
+        # >>>> COLLISION DETECTION WALL AND SNAKE
+        #
         # Check if the snake is hitting the wall or itself and update self._snake_dead
-        self._detect_collision_withObstacle()
+        # Get the position of the snakes head
+        snake_head = self.position_snake_body[0]
+        # COLLISION WIHT WALL: Check if head of snake is outside of the board game.
+        if (snake_head >= np.array(self.BOARD_SIZE) ).any() or ( snake_head < np.zeros(2) ).any() == True:
+            self._snake_dead = True
+        # COLLISION WIHT SNAKE: Check if the head of the snake matches the position of any other part of the snake.
+        elif self._is_array_in_list(snake_head, self.position_snake_body[1:]) == True:
+            self._snake_dead = True
+        #
+        # <<<< COLLISTION DETECTION
         
         # Return the status of the snake: True=GameOver, False=Snake is alive and well.
         return self._snake_dead
@@ -307,37 +312,13 @@ class Snake:
     
 if __name__ == "__main__":
     #
-    #   Implement the while-loop, user input detection and rendering here. Maybe create a new class or some functions for that.
+    #   Implement the while-loop, user input detection and rendering-
     #
-    snake = Snake(initial_length=5)
+
+    # Import game engine pygame
+    import pygame
     
-    snake.print_game_state()
-    snake.move(SOUTH)
-    snake.print_game_state()
-    snake.move(SOUTH)
+    # Initialise game engine
+    pygame.init()
     
-    snake.print_game_state()
-    snake.move(EAST)
     
-    snake.print_game_state()
-    snake.move(NORTH)
-    
-    snake.print_game_state()
-    snake.move(WEST)
-    
-    snake.print_game_state()
-    snake.move(NORTH)
-    snake.print_game_state()
-    
-    snake.move(NORTH)
-    snake.print_game_state()
-    #snake.move(FORWARD)
-    #snake.move(RIGHT)
-    #snake.move(NORTH)
-    #snake.move(SOUTH)
-    #snake.move(EAST)
-    #snake.move(WEST)
-    
-    #snake.move([WEST, EAST])
-    #snake.move(90)
-    #snake.move(NORTH+10)
