@@ -265,9 +265,10 @@ class Snake:
         # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
         gameBoard = [ [ " " for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
         for snakeBody in self.position_snake_body:
-            gameBoard[snakeBody[0]][snakeBody[1]] = "S"
+            if ( snakeBody >= 0 ).all() == True:
+                gameBoard[snakeBody[1]][snakeBody[0]] = "S"
             
-        gameBoard[self.position_apple[0]][self.position_apple[1]] = "A"
+        gameBoard[self.position_apple[1]][self.position_apple[0]] = "A"
         
         return {"gameover"  : self._snake_dead,
                 "score"     : self.score,
@@ -277,6 +278,21 @@ class Snake:
                 "height"    : self.BOARD_SIZE[1],
                 "board"     : gameBoard}
     
+    def print_game_state(self):
+        # Get the state of the game
+        game_state = self.get_game_state()
+        # Print board of the game
+        print("+"+"".join([ "-" for i in range(0, game_state["width"]) ])+"+")
+        for row in game_state["board"]:
+            output = ""
+            for col in row:
+                output += col
+            print("|"+output+"|")
+        print("+"+"".join([ "-" for i in range(0, game_state["width"]) ])+"+")
+        # Print score and if your dead
+        print(f"game over={game_state['gameover']}; score={game_state['score']}")
+        
+    
     
 if __name__ == "__main__":
     #
@@ -284,11 +300,13 @@ if __name__ == "__main__":
     #
     snake = Snake()
     
+    snake.print_game_state()
     snake.move(LEFT)
+    snake.print_game_state()
     #snake.move(FORWARD)
     #snake.move(RIGHT)
-    snake.move(NORTH)
-    snake.move(SOUTH)
+    #snake.move(NORTH)
+    #snake.move(SOUTH)
     #snake.move(EAST)
     #snake.move(WEST)
     
