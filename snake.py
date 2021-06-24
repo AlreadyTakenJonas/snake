@@ -148,9 +148,15 @@ class Snake:
         self.position_apple = new_position
         
     def _detect_collision_withObstacle(self):
-        # TODO: DOCSTRING, Check collision detection with walls and snake body
-        # Detect if player has one the game (write own function for that? Check that in _get_game_state()?)
-        pass
+        # Get the position of the snakes head
+        snake_head = self.position_snake_body[0]
+        # COLLISION WIHT WALL: Check if head of snake is outside of the board game.
+        if (snake_head >= np.array(self.BOARD_SIZE) ).any() or ( snake_head < np.zeros(2) ).any() == True:
+            self._snake_dead = True
+        # COLLISION WIHT SNAKE: Check if the head of the snake matches the position of any other part of the snake.
+        elif self._is_array_in_list(snake_head, self.position_snake_body[1:]) == True:
+            self._snake_dead = True
+        
     
     def _update_score(self):
         """
@@ -209,7 +215,6 @@ class Snake:
         if isinstance(direction, np.ndarray) or self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Is the passed direction opposite to the current direction? If so ignore the user input and move the snake one step FORWARD.
             if (direction==-1*current_direction).all() == True: direction = FORWARD
-            print("OPPISITE")
             
         #   CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
         #
@@ -224,14 +229,12 @@ class Snake:
             direction = current_direction @ np.array([ [  int(np.cos(rotation_angle)), int(np.sin(rotation_angle))], 
                                                        [ -int(np.sin(rotation_angle)), int(np.cos(rotation_angle))] ])
             # CONVERSION TO ABSOLUTE DIRECTION DONE
-            print("CONVERSION")
             
         # Check if the parameter direction is a valid absolute direction. Valid absolute directions are the np.ndarrays NORTH, EAST, SOUTH and WEST (defined above the class Snake.)
         elif not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Parameter direction is neither relative nor absolute direction. Raise ValueError
             raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
             
-        print(f"{self.position_snake_body[0]}-{self.position_snake_body[1]}={current_direction} -> {direction}")
         #   IS THE GAME OVER?
         #
         # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
@@ -306,24 +309,27 @@ if __name__ == "__main__":
     #
     #   Implement the while-loop, user input detection and rendering here. Maybe create a new class or some functions for that.
     #
-    snake = Snake()
+    snake = Snake(initial_length=5)
     
     snake.print_game_state()
     snake.move(SOUTH)
+    snake.print_game_state()
+    snake.move(SOUTH)
+    
     snake.print_game_state()
     snake.move(EAST)
     
     snake.print_game_state()
-    snake.move(SOUTH)
-    
-    snake.print_game_state()
-    snake.move(SOUTH)
+    snake.move(NORTH)
     
     snake.print_game_state()
     snake.move(WEST)
     
     snake.print_game_state()
-    snake.move(SOUTH)
+    snake.move(NORTH)
+    snake.print_game_state()
+    
+    snake.move(NORTH)
     snake.print_game_state()
     #snake.move(FORWARD)
     #snake.move(RIGHT)
