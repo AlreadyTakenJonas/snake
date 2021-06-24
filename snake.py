@@ -263,7 +263,19 @@ class Snake:
 
     def get_game_state(self):
         # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
-        pass
+        gameBoard = [ [ " " for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
+        for snakeBody in self.position_snake_body:
+            gameBoard[snakeBody[0]][snakeBody[1]] = "S"
+            
+        gameBoard[self.position_apple[0]][self.position_apple[1]] = "A"
+        
+        return {"gameover"  : self._snake_dead,
+                "score"     : self.score,
+                "snakeBody" : self.position_snake_body,
+                "apple"     : self.position_apple,
+                "width"     : self.BOARD_SIZE[0],
+                "height"    : self.BOARD_SIZE[1],
+                "board"     : gameBoard}
     
     
 if __name__ == "__main__":
