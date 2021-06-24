@@ -15,6 +15,8 @@ from random import randint
 NORTH, EAST, SOUTH, WEST = np.array([0,-1]), np.array([1,0]), np.array([0,1]), np.array([-1,0])
 # Create macros to make controlling the snake with relative directions easier (realtive to the moving direction of the snake)
 LEFT, FORWARD, RIGHT = -1, 0, 1
+# Create macros so the output of the class is easier to understand.
+FLOOR, SNAKE, APPLE = 0, 1, 2
 
 
 class Snake:
@@ -202,11 +204,12 @@ class Snake:
         # CHECK IF ABSOLUTE DIRECTION POINTS AGAINST CURRENT MOVING DIRECTION
         #
         # Get current direction by subtraction the second and the first element of the snake body.
-        current_direction = self.position_snake_body[1]-self.position_snake_body[0]
+        current_direction = self.position_snake_body[0]-self.position_snake_body[1]
         # Is the passed direction an absolute direction?
         if isinstance(direction, np.ndarray) or self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Is the passed direction opposite to the current direction? If so ignore the user input and move the snake one step FORWARD.
             if (direction==-1*current_direction).all() == True: direction = FORWARD
+            print("OPPISITE")
             
         #   CONVERT RELATIVE DIRECTIONS INTO ABSOLUTE DIRECTIONS
         #
@@ -218,15 +221,17 @@ class Snake:
             # Define a rotation angle based on the relative direction (-90°, 0°, +90°)
             rotation_angle = direction*np.pi/2
             # Rotate the current absolute direction with a rotation matrix. Matrix will rotate the current_direction by rotation_angle radians.
-            direction = current_direction @ np.array([ [ int(np.cos(rotation_angle)), -int(np.sin(rotation_angle))], 
-                                                       [ int(np.sin(rotation_angle)),  int(np.cos(rotation_angle))] ])
+            direction = current_direction @ np.array([ [  int(np.cos(rotation_angle)), int(np.sin(rotation_angle))], 
+                                                       [ -int(np.sin(rotation_angle)), int(np.cos(rotation_angle))] ])
             # CONVERSION TO ABSOLUTE DIRECTION DONE
+            print("CONVERSION")
             
         # Check if the parameter direction is a valid absolute direction. Valid absolute directions are the np.ndarrays NORTH, EAST, SOUTH and WEST (defined above the class Snake.)
         elif not isinstance(direction, np.ndarray) or not self._is_array_in_list(direction, [NORTH, EAST, SOUTH, WEST]):
             # Parameter direction is neither relative nor absolute direction. Raise ValueError
             raise ValueError("Wrong value passed for parameter 'direction'. Snake.Snake.move() expects the directions Snake.NORTH, Snake.EAST, Snake.SOUTH and Snake.WEST or Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
             
+        print(f"{self.position_snake_body[0]}-{self.position_snake_body[1]}={current_direction} -> {direction}")
         #   IS THE GAME OVER?
         #
         # Check if the snake died in the previous round. If it's dead, do nothing and return the status of the snake: True=GameOver, False=Snake is alive and well.
@@ -263,12 +268,12 @@ class Snake:
 
     def get_game_state(self):
         # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
-        gameBoard = [ [ " " for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
+        gameBoard = [ [ FLOOR for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
         for snakeBody in self.position_snake_body:
             if ( snakeBody >= 0 ).all() == True:
-                gameBoard[snakeBody[1]][snakeBody[0]] = "S"
+                gameBoard[snakeBody[1]][snakeBody[0]] = SNAKE
             
-        gameBoard[self.position_apple[1]][self.position_apple[0]] = "A"
+        gameBoard[self.position_apple[1]][self.position_apple[0]] = APPLE
         
         return {"gameover"  : self._snake_dead,
                 "score"     : self.score,
@@ -281,14 +286,17 @@ class Snake:
     def print_game_state(self):
         # Get the state of the game
         game_state = self.get_game_state()
-        # Print board of the game
-        print("+"+"".join([ "-" for i in range(0, game_state["width"]) ])+"+")
+        # PINT THE CURRENT GAME BOARD
+        # Create a mapping so the programm knows what ascii characters it should use to print the game.
+        graphics = {FLOOR: " ", SNAKE: "▇", APPLE: "◼"}
+        # Print board
+        print("┌"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┐")
         for row in game_state["board"]:
             output = ""
             for col in row:
-                output += col
-            print("|"+output+"|")
-        print("+"+"".join([ "-" for i in range(0, game_state["width"]) ])+"+")
+                output += graphics[col]
+            print("│"+output+"│")
+        print("└"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┘")
         # Print score and if your dead
         print(f"game over={game_state['gameover']}; score={game_state['score']}")
         
@@ -301,7 +309,21 @@ if __name__ == "__main__":
     snake = Snake()
     
     snake.print_game_state()
-    snake.move(LEFT)
+    snake.move(SOUTH)
+    snake.print_game_state()
+    snake.move(EAST)
+    
+    snake.print_game_state()
+    snake.move(SOUTH)
+    
+    snake.print_game_state()
+    snake.move(SOUTH)
+    
+    snake.print_game_state()
+    snake.move(WEST)
+    
+    snake.print_game_state()
+    snake.move(SOUTH)
     snake.print_game_state()
     #snake.move(FORWARD)
     #snake.move(RIGHT)
