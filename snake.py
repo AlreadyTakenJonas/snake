@@ -346,10 +346,9 @@ def run_snake():
     # Setup the game clock
     frame_rate = pygame.time.Clock()
     
-    # Setup green 800x450 display with caption
+    # Setup green 800x450 display
     SCREEN = pygame.display.set_mode(SCREEN_SIZE)
     SCREEN.fill(BACKGROUND_COLOR)
-    pygame.display.set_caption("Objectively Good Snake")
     
     # Get an instance of the snake game
     snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT )
@@ -416,6 +415,9 @@ def run_snake():
             pygame.draw.rect(SCREEN, SNAKE_COLOR, snake_tail_connector)
         #
         # <<<< RENDER SNAKE AND APPLE
+        
+        # Set the caption of the display window with the current game score
+        pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
         
         # Update display
         pygame.display.update()
