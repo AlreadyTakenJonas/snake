@@ -355,16 +355,14 @@ def run_snake():
     #
     # <<<< SETUP GAME
     
-    
     # >>>> START GAME LOOP
-    running = True
+    # direction_stack is used to memorize which direction the player wants to go
+    direction_stack = []
+    running = True  
     while running:
         
         # Clear the screen
         SCREEN.fill(BACKGROUND_COLOR)
-        
-        # Reset walking direction
-        direction = FORWARD
         
         # >>>> HANDLE EVENTS AND KEY PRESSES
         #
@@ -374,17 +372,22 @@ def run_snake():
             if event.type == pygame.locals.QUIT:
                 running = False
                 break
-        
-        # Change the walking direction if a key is pressed
-        key_input = pygame.key.get_pressed()
-        if key_input[pygame.K_UP]:      
-            direction = NORTH
-        elif key_input[pygame.K_RIGHT]:   
-            direction = EAST
-        elif key_input[pygame.K_DOWN]:    
-            direction = SOUTH
-        elif key_input[pygame.K_LEFT]:    
-            direction = WEST
+            
+            # Did the player press a key?
+            if event.type == pygame.KEYDOWN:
+                # Check all the arrow keys and save the direction the player wants to go.
+                # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
+                if event.key == pygame.K_UP: direction_stack.append(NORTH)
+                if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
+                if event.key == pygame.K_LEFT: direction_stack.append(WEST)
+                if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
+                    
+        try:
+            # Get the direction the player wants to go in the next move
+            direction = direction_stack.pop(0)
+        except IndexError:
+            # If the player didn't push a key don't change the direction
+            direction = FORWARD
         #
         # <<<< HANDLE EVENTS AND KEY PRESSES
         
