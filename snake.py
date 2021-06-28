@@ -11,6 +11,11 @@ import numpy as np
 # Used to generate random coordinates
 from random import randint
 
+# Import game engine pygame
+import pygame
+import pygame.locals    
+    
+
 # Create macros to make controlling the snake with absolute directions easier
 NORTH, EAST, SOUTH, WEST = np.array([0,-1]), np.array([1,0]), np.array([0,1]), np.array([-1,0])
 # Create macros to make controlling the snake with relative directions easier (realtive to the moving direction of the snake)
@@ -39,7 +44,19 @@ class Snake:
     # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
     step_counter = 0
     
-    def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20):
+    # Define colors for graphics
+    BACKGROUND_COLOR = (85,102,0)
+    APPLE_COLOR = (102,17,0)
+    SNAKE_COLOR = (51,51,0)
+    
+    # Define pixel size of graphics
+    BOX_SIZE = 20
+    SNAKE_MARGIN = 1
+    SNAKE_BORDER_RADIUS = 2
+    APPLE_MARGIN = 4
+    APPLE_BORDER_RADIUS = 2
+    
+    def __init__(self, board_width:int=32, board_height:int=18, box_size:int=BOX_SIZE, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20):
         #
         #   TODO: DOCSTRING, Initialise game score
         #
@@ -51,6 +68,12 @@ class Snake:
         if not (board_width > 1 and board_height > 1): raise ValueError("The board width and height must be bigger than 1!")
         # Set the size of the board
         self.BOARD_SIZE = (board_width, board_height)
+        
+        # Check the requested size of each drawn block (important for graphics)
+        if not isinstance(box_size, int): raise ValueError("The box size must be an integer.")
+        if not box_size > 0: raise ValueError("The box size muste be bigger than 0.")
+        # The the size of each block the graphics will be build with
+        self.BOX_SIZE=box_size
         
         #   INITIALISE SNAKE
         #
@@ -291,6 +314,41 @@ class Snake:
                 "height"    : self.BOARD_SIZE[1],
                 "board"     : gameBoard}
     
+    def draw(self, SURFACE, origin:tuple=(0,0)):
+        """
+        Draw the current state of the game in a pygame window. SURFACE must be a pygame display.
+        """
+        
+        # Clear the screen
+        background = pygame.Rect( origin, tuple([length*self.BOX_SIZE for length in self.BOARD_SIZE])  )
+        pygame.draw.rect(SURFACE, self.BACKGROUND_COLOR, background)
+        
+        # >>>> RENDER SNAKE AND APPLE
+        #
+        # Draw the apple
+        position_apple = tuple(self.position_apple*self.BOX_SIZE+self.APPLE_MARGIN) + np.array(origin)
+        apple = pygame.Rect(position_apple, (self.BOX_SIZE-2*self.APPLE_MARGIN, self.BOX_SIZE-2*self.APPLE_MARGIN))
+        pygame.draw.rect(SURFACE, self.APPLE_COLOR, apple, border_radius=self.APPLE_BORDER_RADIUS)
+        
+        # Draw the snake
+        for snake_element in self.position_snake_body:
+            # Ignore all elements that are outside if the game board (the head is outside, when the snake's dead)
+            if ( snake_element >= np.zeros(2) ).all() and ( snake_element < np.array(self.BOARD_SIZE) ).all():
+                position_snake = tuple(snake_element*self.BOX_SIZE+self.SNAKE_MARGIN) + np.array(origin)
+                snake = pygame.Rect(position_snake, (self.BOX_SIZE-2*self.SNAKE_MARGIN, self.BOX_SIZE-2*self.SNAKE_MARGIN))
+                pygame.draw.rect(SURFACE, self.SNAKE_COLOR, snake, border_radius=self.SNAKE_BORDER_RADIUS)
+        
+        # So far the body of the snake is a bunch of unconnected boxes. This loop connects them together by drawing new boxes between the segments of the snake.
+        for snake_current, snake_next in zip(self.position_snake_body[:-1], self.position_snake_body[1:]):
+            # Ignore all elements that are outside if the game board (the head is outside, when the snake's dead)
+            if ( snake_current >= np.zeros(2) ).all() and ( snake_current < np.array(self.BOARD_SIZE) ).all():
+                direction_snake_tail = (snake_next-snake_current)
+                snake_tail_connector = pygame.Rect((0,0), (self.BOX_SIZE-2*self.SNAKE_MARGIN, self.BOX_SIZE-2*self.SNAKE_MARGIN))
+                snake_tail_connector.center = snake_current*self.BOX_SIZE + self.BOX_SIZE/2 + direction_snake_tail*self.BOX_SIZE/2 + np.array(origin)
+                pygame.draw.rect(SURFACE, self.SNAKE_COLOR, snake_tail_connector)
+        #
+        # <<<< RENDER SNAKE AND APPLE
+    
     def print_game_state(self):
         # Get the state of the game
         game_state = self.get_game_state()
@@ -321,18 +379,9 @@ def run_snake():
     # >>>> DEFINE MACROS (COLOR, SCREEN SIZE, ...)
     #
     
-    # Color
-    BACKGROUND_COLOR = (85,102,0)
-    APPLE_COLOR = (102,17,0)
-    SNAKE_COLOR = (51,51,0)
-    
     # Screen and game board size
-    SCREEN_SIZE = (800,450)
+    SCREEN_SIZE = (900,500)
     BOX_SIZE = 20
-    SNAKE_MARGIN = 1
-    SNAKE_BORDER_RADIUS = 2
-    APPLE_MARGIN = 4
-    APPLE_BORDER_RADIUS = 2
     BOARD_WIDTH, BOARD_HEIGHT = [ int(i/BOX_SIZE) for i in SCREEN_SIZE ]
     
     # Frame Rate
@@ -348,10 +397,9 @@ def run_snake():
     
     # Setup green 800x450 display
     SCREEN = pygame.display.set_mode(SCREEN_SIZE)
-    SCREEN.fill(BACKGROUND_COLOR)
     
     # Get an instance of the snake game
-    snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT )
+    snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT, box_size=BOX_SIZE )
     #
     # <<<< SETUP GAME
     
@@ -362,7 +410,7 @@ def run_snake():
     while running:
         
         # Clear the screen
-        SCREEN.fill(BACKGROUND_COLOR)
+        SCREEN.fill((0,0,0))
         
         # >>>> HANDLE EVENTS AND KEY PRESSES
         #
@@ -393,32 +441,11 @@ def run_snake():
         
         # Move the snake by one step
         snake_controller.move(direction)
+        # Draw the snake game to the pygame displayy
+        snake_controller.draw(SCREEN)
         
         # Get the current state of the game
         game_state = snake_controller.get_game_state()
-        
-        # >>>> RENDER SNAKE AND APPLE
-        #
-        # Draw the apple
-        position_apple = tuple(game_state["apple"]*BOX_SIZE+APPLE_MARGIN)
-        apple = pygame.Rect(position_apple, (BOX_SIZE-2*APPLE_MARGIN, BOX_SIZE-2*APPLE_MARGIN))
-        pygame.draw.rect(SCREEN, APPLE_COLOR, apple, border_radius=APPLE_BORDER_RADIUS)
-        
-        # Draw the snake
-        for snake_element in game_state["snakeBody"]:
-            position_snake = tuple(snake_element*BOX_SIZE+SNAKE_MARGIN)
-            snake = pygame.Rect(position_snake, (BOX_SIZE-2*SNAKE_MARGIN, BOX_SIZE-2*SNAKE_MARGIN))
-            pygame.draw.rect(SCREEN, SNAKE_COLOR, snake, border_radius=SNAKE_BORDER_RADIUS)
-        
-        # So far the body of the snake is a bunch of unconnected boxes. This loop connects them together by drawing new boxes between the segments of the snake.
-        for snake_current, snake_next in zip(game_state["snakeBody"][:-1], game_state["snakeBody"][1:]):
-            direction_snake_tail = (snake_next-snake_current)
-            snake_tail_connector = pygame.Rect((0,0), (BOX_SIZE-2*SNAKE_MARGIN, BOX_SIZE-2*SNAKE_MARGIN))
-            snake_tail_connector.center = snake_current*BOX_SIZE + BOX_SIZE/2 + direction_snake_tail*BOX_SIZE/2
-            pygame.draw.rect(SCREEN, SNAKE_COLOR, snake_tail_connector)
-        #
-        # <<<< RENDER SNAKE AND APPLE
-        
         # Set the caption of the display window with the current game score
         pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
         
