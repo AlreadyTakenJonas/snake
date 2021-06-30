@@ -380,8 +380,8 @@ def run_snake():
     #
     
     # Screen and game board size
-    SCREEN_SIZE = (900,500)
-    BOX_SIZE = 20
+    SCREEN_SIZE = (1000,600)
+    BOX_SIZE = 40
     BOARD_WIDTH, BOARD_HEIGHT = [ int(i/BOX_SIZE) for i in SCREEN_SIZE ]
     
     # Frame Rate
