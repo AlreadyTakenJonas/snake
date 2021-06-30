@@ -31,19 +31,6 @@ class Snake:
     This class is gonna control the snake and the gameboard. Each turn you call a method and tell the class where to move the snake. This class shall take care of collision detection, the game board, the position of the snake, spawning the apple and keeping track of the score. It should do everything except run the game loop, check the user input and render the game. This function should only run the backend. A seperate script shall collect the user input, render the game to the screen and implement the while loop to run the game.
     """
     
-    # Set in __init__. Tupel with width and height of the game board.
-    BOARD_SIZE = ()
-    # Set in __init__ and changed during the game. Position of the body of the snake. List of tupels. Every np.array ist one point on the board. The first element is the head. The last element is the tail.
-    position_snake_body = []
-    # Set in _spawm_apple. Holds a numpy vector with the position of the apple on the game board.
-    position_apple = np.array([])
-    # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
-    _snake_dead = False
-    # Integer keeping track of the players points
-    score = 0
-    # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
-    step_counter = 0
-    
     # Define colors for graphics
     BACKGROUND_COLOR = (85,102,0)
     APPLE_COLOR = (102,17,0)
@@ -82,7 +69,10 @@ class Snake:
         if not isinstance(initial_length, int) or not initial_length >= 2: raise ValueError("The snake must have a length of at least 1 (only integer values allowed).")
         # Initialise position and length of the snake
         # The snake head will be placed in the middle of the first row. The body will be placed of screen.
+        # Position of the body of the snake. List of tupels. Every np.array ist one point on the board. The first element is the head. The last element is the tail.
         self.position_snake_body = [ np.array([self._get_max_x()//2, i]) for i in range(0, -initial_length, -1) ]
+        # Save the initial length of the snake. Used when generating trainging data for neural networks.
+        self.initial_length = initial_length
         
         #   PLACE THE FIRST APPLE
         self._spawn_apple()
@@ -102,6 +92,15 @@ class Snake:
         self.MINIMAL_SCORE_PER_APPLE = min_score_per_apple
         # The more steps the player needs to get the apple, the less points he makes. If he makes more than 20, he will get the MINIMAL_SCORE_PER_APPLE
         self.MAXIMAL_STEP_COUNT      = max_step_to_apple
+        
+        # INITIALISE GAME STATE VARIABLES
+        #
+        # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
+        self._snake_dead = False
+        # Integer keeping track of the players points
+        self.score = 0
+        # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
+        self.step_counter = 0
         
     def _get_max_x(self):
         """
