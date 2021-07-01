@@ -11,7 +11,7 @@ This file implements a class that learns to play the game snake with a neural ne
 """
 
 # Import the snake game logic
-import snake
+from snake import Snake, NORTH, SOUTH, EAST, WEST, FORWARD, LEFT, RIGHT
 
 # Import Pathlib for reading, writing files
 from pathlib import Path
@@ -21,12 +21,15 @@ import random as r
 import json
 # Progress bar
 from tqdm import tqdm
+# Math and shit
+import numpy as np
 
-class NeuralNetwork(snake.Snake):
+class NeuralNetwork(Snake):
     """
     This class inherits the game logic from the Snake class and trys to learn ply the game snake with a neural network
     """
     
+  
     def __init__(self, *args, **kwargs):
         """
         Initialise the class and call the initialisation of the snake game class.
@@ -44,8 +47,51 @@ class NeuralNetwork(snake.Snake):
 
         """
         
-        super().__init__(*args, **kwargs)        
-    
+        super().__init__(*args, **kwargs)    
+            
+    def move(self, save_gamestate_to:Path, *args, **kwargs):
+        """
+        Wrapper around the parents move() method. It saves the game state to a file, when moving the snake
+
+        Parameters
+        ----------
+        save_gamestate_to : Path
+            DESCRIPTION.
+        *args, **kwargs : TYPE
+            Shit passed to Snake.move().
+
+        Returns
+        -------
+        None.
+
+        """
+        # Check if the action the snake should perform is a relative direction
+        if not isinstance(action, int) or not action in [LEFT, FORWARD, RIGHT]:
+            # Check if the parameter direction is a valid relative direction. Valid relative directions are the ints LEFT, RIGHT and FORWARD (defined above the class snake.Snake.)
+            raise ValueError("Wrong value passed for parameter 'action'. neural_network.NeuralNetwork.move() expects the directions Snake.LEFT, Snake.FORWARD and Snake.RIGHT.")
+        
+        # GET PREV. GAME STATE
+        # Get the state of the game BEFORE moving the snake. Save also the intended walking direction
+        # Convert numpy arrays of numpy ints to tuples for python ints so they can be saved as in json
+        prev_game_state = {"snake_position": [ elem.tolist() for elem in self.position_snake_body ],
+                           "apple_position": self.position_apple.tolist(),
+                           "board_size": self.BOARD_SIZE,
+                           "steps_walked_since_last_apple": self.step_counter,
+                           "next_action": action}
+        
+        # Move the snake
+        super().move(action, *args, **kwargs)
+        
+        # Was the move deadly? Append this information to the game_state
+        prev_game_state["next_action_deadly"] = self._snake_dead
+        
+        # Convert the prev_game_state into a json-foramt
+        game_state_json = json.dumps(prev_game_state)
+        # Write the state of the game to file
+        with save_gamestate_to.open("a") as f:
+            f.write(game_state_json+"\n")
+            
+        
     def generate_random_training_data(self, save_to:Path, training_games:int=1000, maximal_steps_per_game:int=500):
         """
         Generate training data by random walking a bunch of games. The data is not processed in anyway. It's just the raw game output
@@ -92,24 +138,24 @@ class NeuralNetwork(snake.Snake):
                              desc=f"Game {game_number_string}", unit=" steps",
                              position=0):
                     # Generate a random walking direction
-                    action = r.choice([snake.LEFT, snake.FORWARD, snake.RIGHT])
+                    action = r.choice([LEFT, FORWARD, RIGHT])
                     # Get the state of the game BEFORE moving the snake. Save also the intended walking direction
                     # Convert numpy arrays of numpy ints to tuples for python ints so they can be saved as in json
-                    prev_game_state = {"snake_position": [ elem.tolist() for elem in self.position_snake_body ],
-                                       "apple_position": self.position_apple.tolist(),
-                                       "board_size": self.BOARD_SIZE,
-                                       "steps_walked_since_last_apple": self.step_counter,
-                                       "next_action": action}
+                    #prev_game_state = {"snake_position": [ elem.tolist() for elem in self.position_snake_body ],
+                    #                   "apple_position": self.position_apple.tolist(),
+                    #                   "board_size": self.BOARD_SIZE,
+                    #                   "steps_walked_since_last_apple": self.step_counter,
+                   #                    "next_action": action}
                     # Move the snake
                     self.move(action)
                     # Was the move deadly? Append this information to the game_state
-                    prev_game_state["next_action_deadly"] = self._snake_dead
+                    #prev_game_state["next_action_deadly"] = self._snake_dead
                     
                     # Convert the prev_game_state into a json-foramt
-                    game_state_json = json.dumps(prev_game_state)
+                    #game_state_json = json.dumps(prev_game_state)
                     # Write the state of the game to file
-                    with game_file.open("a") as f:
-                        f.write(game_state_json+"\n")
+                    #with game_file.open("a") as f:
+                    #    f.write(game_state_json+"\n")
                     
                     # End the game if the player died
                     if self._snake_dead == True:

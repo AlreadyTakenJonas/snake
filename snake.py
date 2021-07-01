@@ -17,8 +17,10 @@ import pygame.locals
     
 
 # Create macros to make controlling the snake with absolute directions easier
+# Do not change these values. They are important for converting between relative and absolute directions
 NORTH, EAST, SOUTH, WEST = np.array([0,-1]), np.array([1,0]), np.array([0,1]), np.array([-1,0])
 # Create macros to make controlling the snake with relative directions easier (realtive to the moving direction of the snake)
+# Do not change these values. They are important for converting between relative and absolute directions
 LEFT, FORWARD, RIGHT = -1, 0, 1
 # Create macros so the output of the class is easier to understand.
 FLOOR, SNAKE, APPLE = 0, 1, 2
@@ -392,7 +394,17 @@ class Snake:
                             
                 try:
                     # Get the direction the player wants to go in the next move
-                    direction = direction_stack.pop(0)
+                    absolute_direction = direction_stack.pop(0)
+                    
+                    #   CONVERT ABSOLUTE DIRECTIONS TO RELATIVE DIRECTIONS
+                    #   This is done, because the neural network should be trained with relative directions and I want to use games played by the user as training data.
+                    #
+                    # Get the current direction of the snake
+                    current_direction = self.position_snake_body[0]-self.position_snake_body[1]
+                    # Compute the relative direction with the inner product
+                    # This relise on the definition of snake.LEFT, snake.FORWARD and snake.RIGHT to be integers -1, 0 and 1
+                    direction = int(absolute_direction[1]*current_direction[0]-absolute_direction[0]*current_direction[1])
+                    
                 except IndexError:
                     # If the player didn't push a key don't change the direction
                     direction = FORWARD
