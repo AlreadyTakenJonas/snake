@@ -37,7 +37,7 @@ class Snake:
     SNAKE_COLOR = (51,51,0)
     
     # Define pixel size of graphics
-    BOX_SIZE = 20
+    BOX_SIZE = 40
     SNAKE_MARGIN = 1
     SNAKE_BORDER_RADIUS = 2
     APPLE_MARGIN = 4
@@ -347,131 +347,113 @@ class Snake:
                 pygame.draw.rect(SURFACE, self.SNAKE_COLOR, snake_tail_connector)
         #
         # <<<< RENDER SNAKE AND APPLE
-    
-    def print_game_state(self):
-        # Get the state of the game
-        game_state = self.get_game_state()
-        # PINT THE CURRENT GAME BOARD
-        # Create a mapping so the programm knows what ascii characters it should use to print the game.
-        graphics = {FLOOR: " ", SNAKE: "▇", APPLE: "◼"}
-        # Print board
-        print("┌"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┐")
-        for row in game_state["board"]:
-            output = ""
-            for col in row:
-                output += graphics[col]
-            print("│"+output+"│")
-        print("└"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┘")
-        # Print score and if your dead
-        print(f"game over={game_state['gameover']}; score={game_state['score']}")
+        
+    def play(self, fps:int=15):
+        """
+        Play a game of snake.
+
+        Parameters
+        ----------
+        fps : TYPE, optional
+            Frames per Second. The default is 15.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Initialise game engine
+        pygame.init()
+        
+        # Run the pygame code in a try-catch-block, so pygame can be quit savely if something goes wrong
+        try:
+            SCREEN_SIZE = tuple([i*self.BOX_SIZE for i in self.BOARD_SIZE])
+            FPS = fps
+            
+            # >>>> SETUP GAME
+            #
+            # Setup the game clock
+            frame_rate = pygame.time.Clock()
+            
+            # Setup display
+            SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+            #
+            # <<<< SETUP GAME
+            
+            # >>>> START GAME LOOP
+            # direction_stack is used to memorize which direction the player wants to go
+            direction_stack = []
+            running = True  
+            while running:
+                
+                # Clear the screen
+                SCREEN.fill((0,0,0))
+                
+                # >>>> HANDLE EVENTS AND KEY PRESSES
+                #
+                for event in pygame.event.get():
+                    
+                    # Quit if the user closes the gui.
+                    if event.type == pygame.locals.QUIT:
+                        running = False
+                        break
+                    
+                    # Did the player press a key?
+                    if event.type == pygame.KEYDOWN:
+                        # Check all the arrow keys and save the direction the player wants to go.
+                        # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
+                        if event.key == pygame.K_UP: direction_stack.append(NORTH)
+                        if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
+                        if event.key == pygame.K_LEFT: direction_stack.append(WEST)
+                        if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
+                            
+                try:
+                    # Get the direction the player wants to go in the next move
+                    direction = direction_stack.pop(0)
+                except IndexError:
+                    # If the player didn't push a key don't change the direction
+                    direction = FORWARD
+                #
+                # <<<< HANDLE EVENTS AND KEY PRESSES
+                
+                # Move the snake by one step
+                self.move(direction)
+                # Draw the snake game to the pygame displayy
+                self.draw(SCREEN)
+                
+                # Get the current state of the game
+                game_state = self.get_game_state()
+                # Set the caption of the display window with the current game score
+                pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
+                
+                # Update display
+                pygame.display.update()
+                # Tick the clock
+                frame_rate.tick(FPS)
+            #
+            # <<<< END GAME LOOP
+            
+        # Exit pygame and reraise errors
+        except Exception as e:
+            # Catch any errors, close the game and reraise the exception
+            print("The Game crashed!")
+            pygame.quit()
+            raise e
+        
+        # Exit the game
+        pygame.quit()
 #        
 #
 #   END OF CLASS SNAKE
 #
 #   
     
-def run_snake():
-    #
-    #   Implement the while-loop, user input detection and rendering-
-    #
-    
-    # >>>> DEFINE MACROS (COLOR, SCREEN SIZE, ...)
-    #
-    
-    # Screen and game board size
-    SCREEN_SIZE = (1000,600)
-    BOX_SIZE = 40
-    BOARD_WIDTH, BOARD_HEIGHT = [ int(i/BOX_SIZE) for i in SCREEN_SIZE ]
-    
-    # Frame Rate
-    FPS = 15
-    
-    #
-    # <<<< DEFINE MACROS
-    
-    # >>>> SETUP GAME
-    #
-    # Setup the game clock
-    frame_rate = pygame.time.Clock()
-    
-    # Setup green 800x450 display
-    SCREEN = pygame.display.set_mode(SCREEN_SIZE)
-    
-    # Get an instance of the snake game
-    snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT, box_size=BOX_SIZE )
-    #
-    # <<<< SETUP GAME
-    
-    # >>>> START GAME LOOP
-    # direction_stack is used to memorize which direction the player wants to go
-    direction_stack = []
-    running = True  
-    while running:
-        
-        # Clear the screen
-        SCREEN.fill((0,0,0))
-        
-        # >>>> HANDLE EVENTS AND KEY PRESSES
-        #
-        for event in pygame.event.get():
-            
-            # Quit if the user closes the gui.
-            if event.type == pygame.locals.QUIT:
-                running = False
-                break
-            
-            # Did the player press a key?
-            if event.type == pygame.KEYDOWN:
-                # Check all the arrow keys and save the direction the player wants to go.
-                # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
-                if event.key == pygame.K_UP: direction_stack.append(NORTH)
-                if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
-                if event.key == pygame.K_LEFT: direction_stack.append(WEST)
-                if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
-                    
-        try:
-            # Get the direction the player wants to go in the next move
-            direction = direction_stack.pop(0)
-        except IndexError:
-            # If the player didn't push a key don't change the direction
-            direction = FORWARD
-        #
-        # <<<< HANDLE EVENTS AND KEY PRESSES
-        
-        # Move the snake by one step
-        snake_controller.move(direction)
-        # Draw the snake game to the pygame displayy
-        snake_controller.draw(SCREEN)
-        
-        # Get the current state of the game
-        game_state = snake_controller.get_game_state()
-        # Set the caption of the display window with the current game score
-        pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
-        
-        # Update display
-        pygame.display.update()
-        # Tick the clock
-        frame_rate.tick(FPS)
-    #
-    # <<<< END GAME LOOP
-    
     
 if __name__ == "__main__":
     
-    # Import game engine pygame
-    import pygame
-    import pygame.locals    
     # Initialise game engine
     pygame.init()
     
-    try:
-        # Run the game
-        run_snake()
-    except Exception as e:
-        # Catch any errors, close the game and reraise the exception
-        print("The Game crashed!")
-        pygame.quit()
-        raise e
-    
-    # Exit the game
-    pygame.quit()
+    # Play Snake
+    snake = Snake()
+    snake.play()

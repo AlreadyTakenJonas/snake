@@ -44,10 +44,9 @@ class NeuralNetwork(snake.Snake):
 
         """
         
-        super().__init__(*args, **kwargs)
-        
-        
-    def generate_training_data(self, save_to:Path, training_games:int=1000, maximal_steps_per_game:int=500):
+        super().__init__(*args, **kwargs)        
+    
+    def generate_random_training_data(self, save_to:Path, training_games:int=1000, maximal_steps_per_game:int=500):
         """
         Generate training data by random walking a bunch of games. The data is not processed in anyway. It's just the raw game output
 
