@@ -11,7 +11,7 @@ This file implements a class that learns to play the game snake with a neural ne
 """
 
 # Import the snake game logic
-from snake import Snake, NORTH, SOUTH, EAST, WEST, FORWARD, LEFT, RIGHT
+from snake import Snake, FORWARD, LEFT, RIGHT
 
 # Import Pathlib for reading, writing files
 from pathlib import Path
@@ -21,8 +21,7 @@ import random as r
 import json
 # Progress bar
 from tqdm import tqdm
-# Math and shit
-import numpy as np
+
 
 class NeuralNetwork(Snake):
     """
@@ -46,10 +45,47 @@ class NeuralNetwork(Snake):
         Instance of the NeuralNetwork class.
 
         """
-        
+        # Initialise parent
         super().__init__(*args, **kwargs)    
-            
-    def move(self, save_gamestate_to:Path, *args, **kwargs):
+        
+        # Initialise array. Will hold all game states of one game before they're written to file.
+        self.game_state_history = []
+        
+    def generate_human_training_data(self, save_gamestate_to:Path, *args, **kwargs):
+        """
+        Wrapper for Snake.play() method. This is used to generate training data from the games played by a human.
+        This wrapper saves the location of a file, where the gamestates will be saved after every move and then it calls it's play() method (inherited from Snake class).
+        The NeuralNetwork method move() uses the file path to save the gamestate. 
+
+        Parameters
+        ----------
+        save_gamestate_to : Path
+            Directory where to save the gamestates?
+        *args : TYPE
+            Some shit passed to self.play().
+        **kwargs : TYPE
+            Some shit passed to self.play().
+
+        Returns
+        -------
+        None.
+
+        """
+        # Create the empty file to store the game states in
+        save_gamestate_to = Path(save_gamestate_to)
+        
+        # Wipe the variable storing a list of all previous game states
+        # It will be refilled during the executiion of self.play()
+        self.game_state_history = []
+        
+        # Play the game
+        self.play(*args, **kwargs)
+        
+        # Write all previous states of the game to json-file
+        save_gamestate_to.write_text(json.dumps(self.game_state_history)+"\n")
+        
+        
+    def move(self, action, *args, **kwargs):
         """
         Wrapper around the parents move() method. It saves the game state to a file, when moving the snake
 
@@ -85,11 +121,8 @@ class NeuralNetwork(Snake):
         # Was the move deadly? Append this information to the game_state
         prev_game_state["next_action_deadly"] = self._snake_dead
         
-        # Convert the prev_game_state into a json-foramt
-        game_state_json = json.dumps(prev_game_state)
-        # Write the state of the game to file
-        with save_gamestate_to.open("a") as f:
-            f.write(game_state_json+"\n")
+        # Save the game state
+        self.game_state_history.append(prev_game_state)
             
         
     def generate_random_training_data(self, save_to:Path, training_games:int=1000, maximal_steps_per_game:int=500):
@@ -126,12 +159,13 @@ class NeuralNetwork(Snake):
                 game_number_string = "0"*(len(str(training_games))-1-len(str(game_number))) + str(game_number)
                 
                 # Generate a file name. This random walk will be saved to that file
-                game_file = training_directory/("randomGame_"+  game_number_string + ".rsg")
-                # Create an empty and overwrite any existing file
-                game_file.write_text("")
+                game_file = training_directory/("randomGame_"+  game_number_string + ".json")
                 
                 # Update the outer progress bar (this progressbar keeps track of the whole process and not just one game)
                 outer_progressbar.update()
+                
+                # Reset the memory holding the whole history of the game
+                self.game_state_history = []
                 
                 # Play the game and add a progressbar with tqdm
                 for _ in tqdm(iterable=range(maximal_steps_per_game),
@@ -139,23 +173,9 @@ class NeuralNetwork(Snake):
                              position=0):
                     # Generate a random walking direction
                     action = r.choice([LEFT, FORWARD, RIGHT])
-                    # Get the state of the game BEFORE moving the snake. Save also the intended walking direction
-                    # Convert numpy arrays of numpy ints to tuples for python ints so they can be saved as in json
-                    #prev_game_state = {"snake_position": [ elem.tolist() for elem in self.position_snake_body ],
-                    #                   "apple_position": self.position_apple.tolist(),
-                    #                   "board_size": self.BOARD_SIZE,
-                    #                   "steps_walked_since_last_apple": self.step_counter,
-                   #                    "next_action": action}
+
                     # Move the snake
                     self.move(action)
-                    # Was the move deadly? Append this information to the game_state
-                    #prev_game_state["next_action_deadly"] = self._snake_dead
-                    
-                    # Convert the prev_game_state into a json-foramt
-                    #game_state_json = json.dumps(prev_game_state)
-                    # Write the state of the game to file
-                    #with game_file.open("a") as f:
-                    #    f.write(game_state_json+"\n")
                     
                     # End the game if the player died
                     if self._snake_dead == True:
@@ -163,6 +183,9 @@ class NeuralNetwork(Snake):
                     
                     # Redraw outer progress bar (this progressbar keeps track of the whole process and not just one game)
                     outer_progressbar.refresh()
+                
+                # Write all previous states of the game to json-file
+                game_file.write_text(json.dumps(self.game_state_history)+"\n")
                 
             
                 # Rerun the constructor of the Snake class. This resets the state of the game. 
@@ -173,3 +196,15 @@ class NeuralNetwork(Snake):
         
         # Return exit status
         return 0
+    
+    
+if __name__ == "__main__":
+    
+    import time
+    
+    # Play Snake
+    snake = NeuralNetwork()
+    
+    # Start a game of snake
+    save_games_to = Path(f"/home/jonas/code/python/snake/training_data/human_walk/humanGame_{int(time.time())}.json")
+    snake.generate_human_training_data(save_gamestate_to=save_games_to)
