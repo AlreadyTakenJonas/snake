@@ -295,23 +295,6 @@ class Snake:
         
         # Return the status of the snake: True=GameOver, False=Snake is alive and well.
         return self._snake_dead
-
-    def get_game_state(self):
-        # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
-        gameBoard = [ [ FLOOR for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
-        for snakeBody in self.position_snake_body:
-            if ( snakeBody >= 0 ).all() and ( snakeBody < np.array(self.BOARD_SIZE) ).all():
-                gameBoard[snakeBody[1]][snakeBody[0]] = SNAKE
-            
-        gameBoard[self.position_apple[1]][self.position_apple[0]] = APPLE
-        
-        return {"gameover"  : self._snake_dead,
-                "score"     : self.score,
-                "snakeBody" : self.position_snake_body,
-                "apple"     : self.position_apple,
-                "width"     : self.BOARD_SIZE[0],
-                "height"    : self.BOARD_SIZE[1],
-                "board"     : gameBoard}
     
     def draw(self, SURFACE, origin:tuple=(0,0)):
         """
@@ -354,7 +337,7 @@ class Snake:
 
         Parameters
         ----------
-        fps : TYPE, optional
+        fps : int, optional
             Frames per Second. The default is 15.
 
         Returns
@@ -421,10 +404,8 @@ class Snake:
                 # Draw the snake game to the pygame displayy
                 self.draw(SCREEN)
                 
-                # Get the current state of the game
-                game_state = self.get_game_state()
                 # Set the caption of the display window with the current game score
-                pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
+                pygame.display.set_caption(f"Snake - Score: {self.score}")
                 
                 # Update display
                 pygame.display.update()
@@ -450,9 +431,6 @@ class Snake:
     
     
 if __name__ == "__main__":
-    
-    # Initialise game engine
-    pygame.init()
     
     # Play Snake
     snake = Snake()
