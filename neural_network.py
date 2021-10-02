@@ -81,8 +81,67 @@ class NeuralNetwork(Snake):
         #       - ...?
         #
         
+        #
+        #   Get some important stats about the game state
+        #
+        # Get the position of the snakes head
+        SNAKE_HEAD = np.array(gameState["snake_position"][0])
+        # Get the size of the board
+        BOARD_SIZE = np.array(gameState["BOARD_SIZE"])
+        # Get the direction the snake is currently facing
+        FORWARD_ABSOLUTE = SNAKE_HEAD - np.array(gameState["snake_position"][1])
+        # Rotate the direction the snake is currently facing by 90° clockwise
+        # This yields the vector facing to the right of the snake
+        RIGHT_ABSOLUTE = FORWARD_ABSOLUTE @ np.array([ [0, 1], [-1, 0] ])
+        # Get the transformation matrix to convert absolute normalised vectors into vectors relative to the snakes travelling direction
+        # This is done by writing the basis vectors of the new basis columnwise in the matrix.
+        ABSOLUTE_TO_RELATIVE_DIRECTION= np.array([ FORWARD_ABSOLUTE, RIGHT_ABSOLUTE ]).T
+        
+        # Get the normalised position of the snake's head
+        # Normalise with the board size. This way the neural net knows where the walls are. If one component is either 0 or 1, it hot a wall.
+        snakeHeadX, snakeHeadY = SNAKE_HEAD / BOARD_SIZE
+        
+        #
+        # >>> DISTANCE TO WALL OR BODY
+        #
+        # Get the distance to the nearest part of the snake body
+        # If the body is not in the way, use the distance to the wall
+        
+        # Get the relative position of the snakes body and view them relative to the direction of travel
+        relativeSnakeBody = [ ( SNAKE_HEAD - np.array(body) ) @ ABSOLUTE_TO_RELATIVE_DIRECTION 
+                              for body in gameState["snake_position"] ]
+        # Make a list of the points on the wall the snake can run into, when walking along a straight line (relative positions).
+        relativeWallPosition = [ np.array(0         , snakeHeadY),
+                                 np.array(snakeHeadX, 0         ),
+                                 np.array(1         , snakeHeadY),
+                                 np.array(snakeHeadX, 1         ) ]
+        # Make a list of all things that the snake might run into (relative positions of the snake body and the walls)
+        relativeSnakeObstacles = relativeSnakeBody + relativeWallPosition
+        
+        # Get the distance to the nearest obstacle in the directions FORWARD, RIGHT and LEFT
+        relativeDistanceObstacleForward = [ # Get eucledean distance
+                                            np.sqrt(pos[0]**2 + pos[1]**2)
+                                            # Loop over all obstacles
+                                            for pos in relativeSnakeObstacles
+                                            # Use only obstacles that are in the FORWARD direction ([1,0]).
+                                            if ( np.linalg.norm(pos) == np.array([1,0]) ).all() ]
+        # TODO: Find minimal distance
+        # TODO: Repeat for the other two directions (LEFT and RIGHT)
+        
+        #
+        # <<< DISTANCE TO WALL OR BODY DONE
+        #
+        
+        # Get the normalised difference vector from the snakes head to the apple. This way the snake knows where the apple is and how far away it is.
+        absoluteDirectionApple = ( np.array(gameState["apple_position"]) - SNAKE_HEAD ) / BOARD_SIZE
+        # Transform the absolute vector into a vector relative to the snakes travelling direction. 
+        directionAppleX, directionAppleY = absoluteDirectionApple @ ABSOLUTE_TO_RELATIVE_DIRECTION
+        # Get the normalised distance from the snake's head to the apple
+        distanceApple = np.sqrt(directionAppleX**2 + directionAppleY**2)
+        
         # TODO: return 1D numpy array
-        return [None]
+        return [ snakeHeadX, snakeHeadY, 
+                 directionAppleX, directionAppleY, distanceApple ]
     
     def evaluate_gameState(self, gameState_current):
         """
