@@ -84,7 +84,7 @@ class NeuralNetwork(Snake):
         # TODO: return 1D numpy array
         return [None]
     
-    def evaluate_gameState(self, gameState_current, gameState_next):
+    def evaluate_gameState(self, gameState_current):
         """
         This function takes in the current gameState and the following gameState to create a score. This score determines how good the move was.
         
@@ -115,12 +115,15 @@ class NeuralNetwork(Snake):
 
         Parameters
         ----------
-        gameState : TYPE
+        gameStates : TYPE
             DESCRIPTION.
 
         Returns
         -------
-        None.
+        3 numpy arrays with
+        1. arrays describing the state of the game (reduced dimensions, see self.reduce_gameState_dimensions).
+        2. arrays describing the move the snake will take in the next step ([1,0,0]=LEFT, [0,1,0]=FORWARD, [0,0,1]=RIGHT).
+        3. a score describing how good the move was (see self.evaluate_gameStates).
 
         """
         
@@ -137,17 +140,7 @@ class NeuralNetwork(Snake):
                                    for state in gameStates ])
         
         # Create an array with scores for every move in output_action. The score determines how good this move is.
-        # The first step is to extract for every game state the following state of the game.
-        # If the snake dies with the next move, then there is no next game state. In this case put None in the generator.
-        # At this point it's very important, that only complete games are used. If the snake didn't die, this generator comprehension can't determine where one game begins and ends in the flat list gameStates.
-        scorable_gameStates = ( ( current_state,
-                                  # Put here the next state of the game or None, if the game is over.
-                                  None if current_state["next_action_deadly"] == True else next_state ) 
-                                # Loop over all game states
-                                for current_state, next_state in zip(gameStates, gameStates[1:]+[None]) )
-        # Feed scorable_gameStates into a function that computes how good the game move was.
-        action_value = np.array([ [self.evaluate_gameState(current_state, next_state)] 
-                                  for current_state, next_state in scorable_gameStates ])
+        action_value = np.array([ self.evaluate_gameState(state) for state in gameStates ])
         
         # Return the preprocessed information
         return input_state, output_action, action_value
