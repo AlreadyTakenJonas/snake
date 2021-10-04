@@ -166,7 +166,7 @@ class NeuralNetwork(Snake):
                           relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft
                         ])
     
-    def evaluate_gameState(self, gameState_current):
+    def evaluate_gameState(self, gameState):
         """
         This function takes in the current gameState and the following gameState to create a score. This score determines how good the move was.
         
@@ -182,6 +182,10 @@ class NeuralNetwork(Snake):
         None.
 
         """
+        
+        # Check if the move was deadly.
+        if gameState["next_action_deadly"] == True: return 0
+        
         # TODO, return single number between 0 and 1
         return None
     
