@@ -159,14 +159,11 @@ class NeuralNetwork(Snake):
         # Get the normalised distance from the snake's head to the apple
         distanceApple = np.sqrt(directionAppleX**2 + directionAppleY**2)
         
-        # Set the bias for the neural network
-        BIAS = 1
-        
         # Return 1D numpy array to describe the state of the game (with reduced dimensions)
         return np.array([ snakeHeadX, snakeHeadY, 
                           directionAppleX, directionAppleY, distanceApple, 
-                          relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft,
-                          BIAS ])
+                          relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft
+                        ])
     
     def evaluate_gameState(self, gameState_current):
         """
