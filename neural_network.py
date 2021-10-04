@@ -75,11 +75,12 @@ class NeuralNetwork(Snake):
         """
         #
         #   TODO: 
-        #       - Relative distances (distance to walls, distance to body (can the body move out of the way in time?), distance to apple )
         #       - The facial recognition stuff to determine where the body of the snake is placed (left or right?, forward or backward?, close or far away?)
         #       - repairing hamiltonean cycles
         #       - ...?
-        #
+        #   DONE:
+        #       - Relative distances (distance to walls, distance to body (can the body move out of the way in time?), distance to apple )
+        
         
         #
         #   Get some important stats about the game state
