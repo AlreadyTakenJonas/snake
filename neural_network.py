@@ -119,15 +119,35 @@ class NeuralNetwork(Snake):
         relativeSnakeObstacles = relativeSnakeBody + relativeWallPosition
         
         # Get the distance to the nearest obstacle in the directions FORWARD, RIGHT and LEFT
-        relativeDistanceObstacleForward = [ # Get eucledean distance
-                                            np.sqrt(pos[0]**2 + pos[1]**2)
+        # Get all distances to the the obstacles in front of the snake
+        relativeDistanceObstacleForward = [ # Get eucledean distance (Because of relative directions the second component is 0.)
+                                            pos[0]
                                             # Loop over all obstacles
                                             for pos in relativeSnakeObstacles
                                             # Use only obstacles that are in the FORWARD direction ([1,0]).
                                             if ( np.linalg.norm(pos) == np.array([1,0]) ).all() ]
-        # TODO: Find minimal distance
-        # TODO: Repeat for the other two directions (LEFT and RIGHT)
+        # Get the smallest distance in front of the snake
+        relativeDistanceObstacleForward = min(relativeDistanceObstacleForward)
         
+        # Get all distances to the the obstacles to the right of the snake
+        relativeDistanceObstacleRight = [ # Get eucledean distance (Because of relative directions the first component is 0.)
+                                          pos[1]
+                                          # Loop over all obstacles
+                                          for pos in relativeSnakeObstacles
+                                          # Use only obstacles that are in the RIGHT direction ([0,1]).
+                                          if ( np.linalg.norm(pos) == np.array([0,1]) ).all() ]
+        # Get the smallest distance to the right
+        relativeDistanceObstacleRight = min(relativeDistanceObstacleRight)
+        
+        # Get all distances to the the obstacles to the right of the snake
+        relativeDistanceObstacleLeft = [ # Get eucledean distance (Because of relative directions the first component is 0 and the second is always negative.)
+                                          -pos[1]
+                                          # Loop over all obstacles
+                                          for pos in relativeSnakeObstacles
+                                          # Use only obstacles that are in the LEFT direction ([0,-1]).
+                                          if ( np.linalg.norm(pos) == np.array([0,-1]) ).all() ]
+        # Get the smallest distance to the left
+        relativeDistanceObstacleLeft = min(relativeDistanceObstacleLeft)
         #
         # <<< DISTANCE TO WALL OR BODY DONE
         #
@@ -139,9 +159,14 @@ class NeuralNetwork(Snake):
         # Get the normalised distance from the snake's head to the apple
         distanceApple = np.sqrt(directionAppleX**2 + directionAppleY**2)
         
-        # TODO: return 1D numpy array
-        return [ snakeHeadX, snakeHeadY, 
-                 directionAppleX, directionAppleY, distanceApple ]
+        # Set the bias for the neural network
+        BIAS = 1
+        
+        # Return 1D numpy array to describe the state of the game (with reduced dimensions)
+        return np.array([ snakeHeadX, snakeHeadY, 
+                          directionAppleX, directionAppleY, distanceApple, 
+                          relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft,
+                          BIAS ])
     
     def evaluate_gameState(self, gameState_current):
         """
