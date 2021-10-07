@@ -108,8 +108,8 @@ class NeuralNetwork(Snake):
         # Get the distance to the nearest part of the snake body
         # If the body is not in the way, use the distance to the wall
         
-        # Get the relative position of the snakes body and view them relative to the direction of travel
-        relativeSnakeBody = [ ( SNAKE_HEAD - np.array(body) ) @ ABSOLUTE_TO_RELATIVE_DIRECTION 
+        # Get the relative and normalised position of the snakes body and view them relative to the direction of travel
+        relativeSnakeBody = [ ( ( SNAKE_HEAD - np.array(body) ) / BOARD_SIZE ) @ ABSOLUTE_TO_RELATIVE_DIRECTION 
                               for body in gameState["snake_position"] ]
         # Make a list of the points on the wall the snake can run into, when walking along a straight line (relative positions).
         relativeWallPosition = [ np.array(0         , snakeHeadY),
@@ -161,8 +161,7 @@ class NeuralNetwork(Snake):
         distanceApple = np.sqrt(directionAppleX**2 + directionAppleY**2)
         
         # Return 1D numpy array to describe the state of the game (with reduced dimensions)
-        return np.array([ snakeHeadX, snakeHeadY, 
-                          directionAppleX, directionAppleY, distanceApple, 
+        return np.array([ directionAppleX, directionAppleY, distanceApple, 
                           relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft
                         ])
     
