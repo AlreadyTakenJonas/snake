@@ -165,9 +165,9 @@ class NeuralNetwork(Snake):
                           relativeDistanceObstacleForward, relativeDistanceObstacleRight, relativeDistanceObstacleLeft
                         ])
     
-    def evaluate_gameState(self, gameState):
+    def evaluate_action(self, gameState):
         """
-        This function takes in the current gameState and the following gameState to create a score. This score determines how good the move was.
+        This function takes in the current gameState and the planned action (the action is part of the gameState dictionary) to create a score. This score determines how good the move was.
         
         TODO: DOCSTRING
 
@@ -184,6 +184,8 @@ class NeuralNetwork(Snake):
         
         # Check if the move was deadly.
         if gameState["next_action_deadly"] == True: return 0
+        
+        # TODO: Predict the next gameState by executing the action.
         
         # TODO, return single number between 0 and 1
         return None
@@ -225,7 +227,7 @@ class NeuralNetwork(Snake):
                                    for state in gameStates ])
         
         # Create an array with scores for every move in output_action. The score determines how good this move is.
-        action_value = np.array([ self.evaluate_gameState(state) for state in gameStates ])
+        action_value = np.array([ self.evaluate_action(state) for state in gameStates ])
         
         # Return the preprocessed information
         return input_state, output_action, action_value
