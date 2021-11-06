@@ -182,13 +182,58 @@ class NeuralNetwork(Snake):
 
         """
         
-        # Check if the move was deadly.
-        if gameState["next_action_deadly"] == True: return 0
+        # This variable contains the value of this move. The function will change the variable, depending on how good the move is and return the value.
+        GAMESCORE = 0.1
+        
+        
         
         # TODO: Predict the next gameState by executing the action.
         
-        # TODO, return single number between 0 and 1
-        return None
+        
+        
+        # Introduce first metric of success. Just check if the snake is getting closer to the apple
+        #
+        # 1. Get currenct distance to apple
+        #
+        # Get the vector from the snakes head to the apple
+        directionToApple = np.array(gameState["apple_position"]) - np.array(gameState["snake_position"][0])
+        # Get the current distance between the snakes head and the apple
+        currentDistanceToApple = np.sqrt(sum(directionToApple**2))
+        #
+        # 2. Get future distance to apple
+        #    Predict the distance from the snakes head to the apple after the action
+        #
+        # Get the direction the snake is currently facing
+        current_direction = np.array(gameState["snake_position"][0]) - np.array(gameState["snake_position"][1])
+        # CONVERT RELATIVE ACTION (LEFT; RIGHT; FORWARD) TO ABSOLUTE DIRECTIONS (VECTOR)
+        # Define a rotation angle based on the relative direction (LEFT=-90°, FORWARD=0°, RIGHT=+90°)
+        rotation_angle = gameState["next_action"]*np.pi/2
+        # Rotate the current absolute direction with a rotation matrix. Matrix will rotate the current_direction by rotation_angle radians.
+        absoluteAction = current_direction @ np.array([ [  int(np.cos(rotation_angle)), int(np.sin(rotation_angle))], 
+                                                        [ -int(np.sin(rotation_angle)), int(np.cos(rotation_angle))] ])
+        # Get the new direction to the apple by adding the absolute action vector (is the snake walking NORTH, SOUTH, EAST or WEST) on to the direction to the apple vector
+        newDirectionToApple = absoluteAction + directionToApple
+        # Get the euclidean distance
+        newDistanceToApple = np.sqrt(sum(newDirectionToApple**2))
+        #
+        # 3. Compare the old and new distance
+        #
+        # Give the snake 0.3 points, if it got closer to the apple
+        if newDistanceToApple > currentDistanceToApple: GAMESCORE += 0.3
+        
+
+        # Check if the snake found the apple: Set the gamescore to 1, if the snake ate the apple
+        if newDistanceToApple == 0: GAMESCORE = 1
+        
+        
+        
+        # Check if the move was deadly. Reset the snakes points to 0, if dead.
+        if gameState["next_action_deadly"] == True: GAMESCORE = 0
+
+
+
+        # Return single number between 0 and 1. Describes the value of the move. 0: bad, 1: good.
+        return GAMESCORE
     
     def preprocess_gameStates(self, gameStates):
         """
