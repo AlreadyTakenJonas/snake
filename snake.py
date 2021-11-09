@@ -17,8 +17,10 @@ import pygame.locals
     
 
 # Create macros to make controlling the snake with absolute directions easier
+# Do not change these values. They are important for converting between relative and absolute directions
 NORTH, EAST, SOUTH, WEST = np.array([0,-1]), np.array([1,0]), np.array([0,1]), np.array([-1,0])
 # Create macros to make controlling the snake with relative directions easier (realtive to the moving direction of the snake)
+# Do not change these values. They are important for converting between relative and absolute directions
 LEFT, FORWARD, RIGHT = -1, 0, 1
 # Create macros so the output of the class is easier to understand.
 FLOOR, SNAKE, APPLE = 0, 1, 2
@@ -31,26 +33,13 @@ class Snake:
     This class is gonna control the snake and the gameboard. Each turn you call a method and tell the class where to move the snake. This class shall take care of collision detection, the game board, the position of the snake, spawning the apple and keeping track of the score. It should do everything except run the game loop, check the user input and render the game. This function should only run the backend. A seperate script shall collect the user input, render the game to the screen and implement the while loop to run the game.
     """
     
-    # Set in __init__. Tupel with width and height of the game board.
-    BOARD_SIZE = ()
-    # Set in __init__ and changed during the game. Position of the body of the snake. List of tupels. Every np.array ist one point on the board. The first element is the head. The last element is the tail.
-    position_snake_body = []
-    # Set in _spawm_apple. Holds a numpy vector with the position of the apple on the game board.
-    position_apple = np.array([])
-    # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
-    _snake_dead = False
-    # Integer keeping track of the players points
-    score = 0
-    # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
-    step_counter = 0
-    
     # Define colors for graphics
     BACKGROUND_COLOR = (85,102,0)
     APPLE_COLOR = (102,17,0)
     SNAKE_COLOR = (51,51,0)
     
     # Define pixel size of graphics
-    BOX_SIZE = 20
+    BOX_SIZE = 40
     SNAKE_MARGIN = 1
     SNAKE_BORDER_RADIUS = 2
     APPLE_MARGIN = 4
@@ -82,7 +71,10 @@ class Snake:
         if not isinstance(initial_length, int) or not initial_length >= 2: raise ValueError("The snake must have a length of at least 1 (only integer values allowed).")
         # Initialise position and length of the snake
         # The snake head will be placed in the middle of the first row. The body will be placed of screen.
+        # Position of the body of the snake. List of tupels. Every np.array ist one point on the board. The first element is the head. The last element is the tail.
         self.position_snake_body = [ np.array([self._get_max_x()//2, i]) for i in range(0, -initial_length, -1) ]
+        # Save the initial length of the snake. Used when generating trainging data for neural networks.
+        self.initial_length = initial_length
         
         #   PLACE THE FIRST APPLE
         self._spawn_apple()
@@ -102,6 +94,15 @@ class Snake:
         self.MINIMAL_SCORE_PER_APPLE = min_score_per_apple
         # The more steps the player needs to get the apple, the less points he makes. If he makes more than 20, he will get the MINIMAL_SCORE_PER_APPLE
         self.MAXIMAL_STEP_COUNT      = max_step_to_apple
+        
+        # INITIALISE GAME STATE VARIABLES
+        #
+        # Variable to keep track of the status of the game. False means the snake lives and the game can go on. True means the snake is dead and the game is over.    
+        self._snake_dead = False
+        # Integer keeping track of the players points
+        self.score = 0
+        # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
+        self.step_counter = 0
         
     def _get_max_x(self):
         """
@@ -296,23 +297,6 @@ class Snake:
         
         # Return the status of the snake: True=GameOver, False=Snake is alive and well.
         return self._snake_dead
-
-    def get_game_state(self):
-        # TODO: DOCSTRING, Return the current state of the game. Where is the snake? Where is the apple? Where are the walls? This is the interface for the AI and the GUI
-        gameBoard = [ [ FLOOR for j in range(0, self.BOARD_SIZE[0]) ] for i in range(0, self.BOARD_SIZE[1]) ]
-        for snakeBody in self.position_snake_body:
-            if ( snakeBody >= 0 ).all() and ( snakeBody < np.array(self.BOARD_SIZE) ).all():
-                gameBoard[snakeBody[1]][snakeBody[0]] = SNAKE
-            
-        gameBoard[self.position_apple[1]][self.position_apple[0]] = APPLE
-        
-        return {"gameover"  : self._snake_dead,
-                "score"     : self.score,
-                "snakeBody" : self.position_snake_body,
-                "apple"     : self.position_apple,
-                "width"     : self.BOARD_SIZE[0],
-                "height"    : self.BOARD_SIZE[1],
-                "board"     : gameBoard}
     
     def draw(self, SURFACE, origin:tuple=(0,0)):
         """
@@ -348,131 +332,118 @@ class Snake:
                 pygame.draw.rect(SURFACE, self.SNAKE_COLOR, snake_tail_connector)
         #
         # <<<< RENDER SNAKE AND APPLE
-    
-    def print_game_state(self):
-        # Get the state of the game
-        game_state = self.get_game_state()
-        # PINT THE CURRENT GAME BOARD
-        # Create a mapping so the programm knows what ascii characters it should use to print the game.
-        graphics = {FLOOR: " ", SNAKE: "▇", APPLE: "◼"}
-        # Print board
-        print("┌"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┐")
-        for row in game_state["board"]:
-            output = ""
-            for col in row:
-                output += graphics[col]
-            print("│"+output+"│")
-        print("└"+"".join([ "─" for i in range(0, game_state["width"]) ])+"┘")
-        # Print score and if your dead
-        print(f"game over={game_state['gameover']}; score={game_state['score']}")
+        
+    def play(self, fps:int=15):
+        """
+        Play a game of snake.
+
+        Parameters
+        ----------
+        fps : int, optional
+            Frames per Second. The default is 15.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Initialise game engine
+        pygame.init()
+        
+        # Run the pygame code in a try-catch-block, so pygame can be quit savely if something goes wrong
+        try:
+            SCREEN_SIZE = tuple([i*self.BOX_SIZE for i in self.BOARD_SIZE])
+            FPS = fps
+            
+            # >>>> SETUP GAME
+            #
+            # Setup the game clock
+            frame_rate = pygame.time.Clock()
+            
+            # Setup display
+            SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+            #
+            # <<<< SETUP GAME
+            
+            # >>>> START GAME LOOP
+            # direction_stack is used to memorize which direction the player wants to go
+            direction_stack = []
+            running = True  
+            while running:
+                
+                # Clear the screen
+                SCREEN.fill((0,0,0))
+                
+                # >>>> HANDLE EVENTS AND KEY PRESSES
+                #
+                for event in pygame.event.get():
+                    
+                    # Quit if the user closes the gui.
+                    if event.type == pygame.locals.QUIT:
+                        running = False
+                        break
+                    
+                    # Did the player press a key?
+                    if event.type == pygame.KEYDOWN:
+                        # Check all the arrow keys and save the direction the player wants to go.
+                        # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
+                        if event.key == pygame.K_UP: direction_stack.append(NORTH)
+                        if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
+                        if event.key == pygame.K_LEFT: direction_stack.append(WEST)
+                        if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
+                            
+                try:
+                    # Get the direction the player wants to go in the next move
+                    absolute_direction = direction_stack.pop(0)
+                    
+                    #   CONVERT ABSOLUTE DIRECTIONS TO RELATIVE DIRECTIONS
+                    #   This is done, because the neural network should be trained with relative directions and I want to use games played by the user as training data.
+                    #
+                    # Get the current direction of the snake
+                    current_direction = self.position_snake_body[0]-self.position_snake_body[1]
+                    # Compute the relative direction with the inner product
+                    # This relise on the definition of snake.LEFT, snake.FORWARD and snake.RIGHT to be integers -1, 0 and 1
+                    direction = int(absolute_direction[1]*current_direction[0]-absolute_direction[0]*current_direction[1])
+                    
+                except IndexError:
+                    # If the player didn't push a key don't change the direction
+                    direction = FORWARD
+                #
+                # <<<< HANDLE EVENTS AND KEY PRESSES
+                
+                # Move the snake by one step
+                self.move(direction)
+                # Draw the snake game to the pygame displayy
+                self.draw(SCREEN)
+                
+                # Set the caption of the display window with the current game score
+                pygame.display.set_caption(f"Snake - Score: {self.score}")
+                
+                # Update display
+                pygame.display.update()
+                # Tick the clock
+                frame_rate.tick(FPS)
+            #
+            # <<<< END GAME LOOP
+            
+        # Exit pygame and reraise errors
+        except Exception as e:
+            # Catch any errors, close the game and reraise the exception
+            print("The Game crashed!")
+            pygame.quit()
+            raise e
+        
+        # Exit the game
+        pygame.quit()
 #        
 #
 #   END OF CLASS SNAKE
 #
 #   
     
-def run_snake():
-    #
-    #   Implement the while-loop, user input detection and rendering-
-    #
-    
-    # >>>> DEFINE MACROS (COLOR, SCREEN SIZE, ...)
-    #
-    
-    # Screen and game board size
-    SCREEN_SIZE = (900,500)
-    BOX_SIZE = 20
-    BOARD_WIDTH, BOARD_HEIGHT = [ int(i/BOX_SIZE) for i in SCREEN_SIZE ]
-    
-    # Frame Rate
-    FPS = 15
-    
-    #
-    # <<<< DEFINE MACROS
-    
-    # >>>> SETUP GAME
-    #
-    # Setup the game clock
-    frame_rate = pygame.time.Clock()
-    
-    # Setup green 800x450 display
-    SCREEN = pygame.display.set_mode(SCREEN_SIZE)
-    
-    # Get an instance of the snake game
-    snake_controller = Snake( board_width=BOARD_WIDTH, board_height=BOARD_HEIGHT, box_size=BOX_SIZE )
-    #
-    # <<<< SETUP GAME
-    
-    # >>>> START GAME LOOP
-    # direction_stack is used to memorize which direction the player wants to go
-    direction_stack = []
-    running = True  
-    while running:
-        
-        # Clear the screen
-        SCREEN.fill((0,0,0))
-        
-        # >>>> HANDLE EVENTS AND KEY PRESSES
-        #
-        for event in pygame.event.get():
-            
-            # Quit if the user closes the gui.
-            if event.type == pygame.locals.QUIT:
-                running = False
-                break
-            
-            # Did the player press a key?
-            if event.type == pygame.KEYDOWN:
-                # Check all the arrow keys and save the direction the player wants to go.
-                # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
-                if event.key == pygame.K_UP: direction_stack.append(NORTH)
-                if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
-                if event.key == pygame.K_LEFT: direction_stack.append(WEST)
-                if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
-                    
-        try:
-            # Get the direction the player wants to go in the next move
-            direction = direction_stack.pop(0)
-        except IndexError:
-            # If the player didn't push a key don't change the direction
-            direction = FORWARD
-        #
-        # <<<< HANDLE EVENTS AND KEY PRESSES
-        
-        # Move the snake by one step
-        snake_controller.move(direction)
-        # Draw the snake game to the pygame displayy
-        snake_controller.draw(SCREEN)
-        
-        # Get the current state of the game
-        game_state = snake_controller.get_game_state()
-        # Set the caption of the display window with the current game score
-        pygame.display.set_caption(f"Snake - Score: {game_state['score']}")
-        
-        # Update display
-        pygame.display.update()
-        # Tick the clock
-        frame_rate.tick(FPS)
-    #
-    # <<<< END GAME LOOP
-    
     
 if __name__ == "__main__":
     
-    # Import game engine pygame
-    import pygame
-    import pygame.locals    
-    # Initialise game engine
-    pygame.init()
-    
-    try:
-        # Run the game
-        run_snake()
-    except Exception as e:
-        # Catch any errors, close the game and reraise the exception
-        print("The Game crashed!")
-        pygame.quit()
-        raise e
-    
-    # Exit the game
-    pygame.quit()
+    # Play Snake
+    snake = Snake()
+    snake.play()
