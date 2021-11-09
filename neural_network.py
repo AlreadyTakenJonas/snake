@@ -25,6 +25,9 @@ from tqdm import tqdm
 # Used for math and neural network
 import numpy as np
 
+# Use for neural network
+import tflearn as tfl
+
 
 class NeuralNetwork(Snake):
     """
@@ -51,8 +54,24 @@ class NeuralNetwork(Snake):
         # Initialise parent
         super().__init__(*args, **kwargs)    
         
-        # Initialise array. Will hold all game states of one game before they're written to file.
+        # Initialise array. Will hold all game states of one game before they're written to file. Used for generating training data.
         self.game_state_history = []
+        
+        #
+        # Create the layout of the neural network
+        #
+        # Create the input layer, with 6 input nodes and unknown number of input data points 
+        neural_net = tfl.input_data(shape=[None, 6])
+        # Create the first hidden layer with 32 nodes
+        neural_net = tfl.fully_connected(neural_net, 32)
+        # Create the second hidden layer with 32 nodes
+        neural_net = tfl.fully_connected(neural_net, 32)
+        # Create the output layer with 3 nodes (LEFT, RIGHT, FORWARD)
+        neural_net = tfl.fully_connected(neural_net, 3, activation="softmax")
+        # Add a regression model to the neural net. Not sure what this step is doing.
+        neural_net = tfl.regression(neural_net)
+        
+        # TODO CREATE MODEL (see http://tflearn.org/tutorials/quickstart.html)
     
     #
     #   >>> PREPROCESS GAME STATES
