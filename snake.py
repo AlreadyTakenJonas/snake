@@ -9,7 +9,7 @@ Created on Mon Jun 21 22:46:06 2021
 # Used for coordinates
 import numpy as np
 # Used to generate random coordinates
-from random import randint
+import random
 
 # Import game engine pygame
 import pygame
@@ -57,6 +57,18 @@ class Snake:
         if not (board_width > 1 and board_height > 1): raise ValueError("The board width and height must be bigger than 1!")
         # Set the size of the board
         self.BOARD_SIZE = (board_width, board_height)
+        
+        # Get a set of tuples with all coordinates of the game board. This is used by self._spawn_apple() to find coordinates on the board, that are not occupied by the snakes body.
+        # Create an empty list.
+        self.POSITIONS_ON_GAME_BOARD = list()
+        # Loop over all x coordinates.
+        for x in range(self.BOARD_SIZE[0]):
+            # Loop over all y coordinates.
+            for y in range(self.BOARD_SIZE[1]):
+                # Add the current (x,y) coordinates to the list.
+                self.POSITIONS_ON_GAME_BOARD.append((x,y))
+        # Convert the list to an unmutable set, so self._spawn_apple() can subtract the set of all coordinates of the snake body from it. This way we get all unoccupied coordinates.
+        self.POSITIONS_ON_GAME_BOARD = set(self.POSITIONS_ON_GAME_BOARD)
         
         # Check the requested size of each drawn block (important for graphics)
         if not isinstance(box_size, int): raise ValueError("The box size must be an integer.")
@@ -155,21 +167,24 @@ class Snake:
         -------
         None.
 
-        """
-        # Generate random positions on the game board until one is found, that is not occupied by the snake
-        while True:
-            # Generate a random position on the game board
-            new_position_x = randint(0, self._get_max_x())
-            new_position_y = randint(0, self._get_max_y())
-            # Convert random position to numpy array
-            new_position = np.array([new_position_x, new_position_y])
-            
-            # Check if the random position is part of the list position_snake_body (all positions occupied by the snake). If it is not, break the loop.
-            if not self._is_array_in_list(new_position, self.position_snake_body):
-                break
+        """        
+        # Get a set with all coordinates of the snakes body.
+        # Turn the list of numpy arrays into a set of tuples.
+        positionOfSnake = set([ tuple(bodyPiece) for bodyPiece in self.position_snake_body ])
+        # Subtract the set of all coordinates blocked by the snake from the set of all coordinates on the game board. -> Set of all unoccupied coordinates.
+        # Save the result as list, so random.choice can pick one of element of the list.
+        availableApplePositions = list( self.POSITIONS_ON_GAME_BOARD - positionOfSnake )
         
-        # Overwrite the current position of the apple with the new position
-        self.position_apple = new_position        
+        # Is the list of available coordinates empty? In other words does the snake occupy the whole game board?
+        if len(availableApplePositions) != 0:
+            # If there are still coordinates unoccupied choose one of the at random.
+            # Overwrite the current position of the apple with the new position
+            self.position_apple = np.array( random.choice(availableApplePositions) )
+        else:
+            # If there is no place left to put the apple, place it outside of the game board.
+            self.position_apple = np.array( self.BOARD_SIZE )
+            # Raise a stop iteration to signal, that the game is over. No more places to put the apple.
+            raise StopIteration("Game Over: There are no more free coordinates to place the apple. The player must've won the game!")
     
     def _update_score(self):
         """
@@ -370,6 +385,7 @@ class Snake:
             direction_stack = []
             running = True
             pause = False
+            self.won = False
             while running:
                 
                 # Clear the screen
@@ -387,7 +403,8 @@ class Snake:
                     # Did the player press a key?
                     if event.type == pygame.KEYDOWN:
                         # Was the button p pressed? -> Pause the game.
-                        if event.key == pygame.K_p: pause = not pause 
+                        if event.key == pygame.K_p: pause = not pause
+                        
                         # Check all the arrow keys and save the direction the player wants to go.
                         # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
                         # Important: Add key presses only to the stack if the game is not paused.
@@ -396,43 +413,63 @@ class Snake:
                         if event.key == pygame.K_LEFT  and not pause: direction_stack.append(WEST)
                         if event.key == pygame.K_DOWN  and not pause: direction_stack.append(SOUTH)
                 
-                if pause:
+                if self.won:
+                    # Do this part only if the player won the game. Skip the rest of the game loop.
+                    # This makes sure that the player can look at the completed game until he closes the gui.
+                    # Set the caption of the display window with the current game score
+                   pygame.display.set_caption(f"Snake - Score: {self.score} - Game Over! You won!")
+                   # Skip to the end of the loop and update the screen. Therefore not moving the snake.
+                   
+                elif pause:
                     # Do this part only if the game is paused. Skip the rest of the game loop.
                     # Set the caption of the display window with the current game score
                     pygame.display.set_caption(f"Snake (PAUSED) - Score: {self.score} - press p to unpause")
-                    # Skip the rest of the loop. Therefore not moving the snake or updating the screen.
-                    continue
-                
-                try:
-                    # Get the direction the player wants to go in the next move
-                    absolute_direction = direction_stack.pop(0)
-                    
-                    #   CONVERT ABSOLUTE DIRECTIONS TO RELATIVE DIRECTIONS
-                    #   This is done, because the neural network should be trained with relative directions and I want to use games played by the user as training data.
+                    # Skip to the end of the loop and update the screen. Therefore not moving the snake.
+                else:
+                    # 
+                    # MOVING >>>>>>>>>>>>>>>>>>>>>>>>>>
+                    # Do this part only if the game is neither won nor paused. This code block moves the snake.
+                    try:
+                        # Get the direction the player wants to go in the next move
+                        absolute_direction = direction_stack.pop(0)
+                        
+                        #   CONVERT ABSOLUTE DIRECTIONS TO RELATIVE DIRECTIONS
+                        #   This is done, because the neural network should be trained with relative directions and I want to use games played by the user as training data.
+                        #
+                        # Get the current direction of the snake
+                        current_direction = self.position_snake_body[0]-self.position_snake_body[1]
+                        # Compute the relative direction with the inner product
+                        # This relise on the definition of snake.LEFT, snake.FORWARD and snake.RIGHT to be integers -1, 0 and 1
+                        direction = int(absolute_direction[1]*current_direction[0]-absolute_direction[0]*current_direction[1])
+                        
+                    except IndexError:
+                        # If the player didn't push a key don't change the direction
+                        direction = FORWARD
                     #
-                    # Get the current direction of the snake
-                    current_direction = self.position_snake_body[0]-self.position_snake_body[1]
-                    # Compute the relative direction with the inner product
-                    # This relise on the definition of snake.LEFT, snake.FORWARD and snake.RIGHT to be integers -1, 0 and 1
-                    direction = int(absolute_direction[1]*current_direction[0]-absolute_direction[0]*current_direction[1])
+                    # <<<< HANDLE EVENTS AND KEY PRESSES
                     
-                except IndexError:
-                    # If the player didn't push a key don't change the direction
-                    direction = FORWARD
-                #
-                # <<<< HANDLE EVENTS AND KEY PRESSES
-                
-                # Move the snake by one step
-                self.move(direction)
+                    # Move the snake by one step
+                    try:
+                        self.move(direction)
+                    # Handle StopIteration. This is raised by self._spawn_apple() if there are no more free coordinates to spawn the apple. -> The Game was won.
+                    except StopIteration as e:
+                        print(f"Congratulations! You've won the game with {self.score} points!")
+                        # Remember that the player won the game. This is used to pause the game perminently. Can be used by child class to check if the game was won.
+                        self.won = True
+                        
+                    # Set the caption of the display window with the current game score
+                    pygame.display.set_caption(f"Snake - Score: {self.score} - press p to pause")
+                    
+                    #
+                    #   MOVING <<<<<<<<<<<<<<<<<<<
+                    #
+                    
+                # UPDATE THE SCREEN
+                    
                 # Draw the snake game to the pygame display
                 self.draw(SCREEN)
-                
-                # Set the caption of the display window with the current game score
-                pygame.display.set_caption(f"Snake - Score: {self.score} - press p to pause")
-                
                 # Update display
                 pygame.display.update()
-            
                 # Tick the clock
                 frame_rate.tick(FPS)            
                 
