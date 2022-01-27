@@ -368,7 +368,8 @@ class Snake:
             # >>>> START GAME LOOP
             # direction_stack is used to memorize which direction the player wants to go
             direction_stack = []
-            running = True  
+            running = True
+            pause = False
             while running:
                 
                 # Clear the screen
@@ -385,13 +386,23 @@ class Snake:
                     
                     # Did the player press a key?
                     if event.type == pygame.KEYDOWN:
+                        # Was the button p pressed? -> Pause the game.
+                        if event.key == pygame.K_p: pause = not pause 
                         # Check all the arrow keys and save the direction the player wants to go.
                         # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
-                        if event.key == pygame.K_UP: direction_stack.append(NORTH)
-                        if event.key == pygame.K_RIGHT: direction_stack.append(EAST)
-                        if event.key == pygame.K_LEFT: direction_stack.append(WEST)
-                        if event.key == pygame.K_DOWN: direction_stack.append(SOUTH)
-                            
+                        # Important: Add key presses only to the stack if the game is not paused.
+                        if event.key == pygame.K_UP    and not pause: direction_stack.append(NORTH)
+                        if event.key == pygame.K_RIGHT and not pause: direction_stack.append(EAST)
+                        if event.key == pygame.K_LEFT  and not pause: direction_stack.append(WEST)
+                        if event.key == pygame.K_DOWN  and not pause: direction_stack.append(SOUTH)
+                
+                if pause:
+                    # Do this part only if the game is paused. Skip the rest of the game loop.
+                    # Set the caption of the display window with the current game score
+                    pygame.display.set_caption(f"Snake (PAUSED) - Score: {self.score} - press p to unpause")
+                    # Skip the rest of the loop. Therefore not moving the snake or updating the screen.
+                    continue
+                
                 try:
                     # Get the direction the player wants to go in the next move
                     absolute_direction = direction_stack.pop(0)
@@ -413,16 +424,18 @@ class Snake:
                 
                 # Move the snake by one step
                 self.move(direction)
-                # Draw the snake game to the pygame displayy
+                # Draw the snake game to the pygame display
                 self.draw(SCREEN)
                 
                 # Set the caption of the display window with the current game score
-                pygame.display.set_caption(f"Snake - Score: {self.score}")
+                pygame.display.set_caption(f"Snake - Score: {self.score} - press p to pause")
                 
                 # Update display
                 pygame.display.update()
+            
                 # Tick the clock
-                frame_rate.tick(FPS)
+                frame_rate.tick(FPS)            
+                
             #
             # <<<< END GAME LOOP
             
