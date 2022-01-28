@@ -11,6 +11,9 @@ import numpy as np
 # Used to generate random coordinates
 import random
 
+from pathlib import Path
+import yaml
+
 # Import game engine pygame
 import pygame
 import pygame.locals    
@@ -480,11 +483,48 @@ class Snake:
         except Exception as e:
             # Catch any errors, close the game and reraise the exception
             print("The Game crashed!")
-            pygame.quit()
-            raise e
+            self.quitGame()
+            raise e        
         
         # Exit the game
+        self.quitGame()
+    
+    def quitGame(self):
+        """
+        This routine is used to clean up afte the game has ended.
+        """
+        # END PYGAME
         pygame.quit()
+        
+        # CHECK FOR NEW HIGHSCORE
+        # Get the file with the highscores
+        highscoreFile = Path(__file__).parent / "highscores.yml"
+        # Read the highscore file and interpret the yaml file
+        try:
+            yamlData = highscoreFile.read_text()
+            highscores = yaml.safe_load(yamlData)
+        # If the file does not exist, use an empty dictionary.
+        except FileNotFoundError:
+            highscores = {}
+        # Is the current score higher than all previous highscores?
+        newHighscore = self.score > max(highscores)
+        # Ask the player for his name and put it into the list of highscores, if the player reached an new highscore
+        if newHighscore == True:
+            playerName = input("Congratulations! You reached a new highscore! Enter player name: ")
+            highscores.update({self.score: playerName})
+        
+        # Sort the list of highscores and slice it down to maximal 10 entries in the list.
+        sortingKey = sorted(highscores, reverse=True)[:10]
+        highscores = { score:highscores[score] for score in sortingKey }
+        highscoreFile.write_text( yaml.dump(highscores) )
+        
+        # Print highscores
+        print(" <<< YOUR SCORE >>> ".center(20))
+        print(f"{self.score}".center(20))
+        print(" <<< HIGHSCORES >>> ".center(20))
+        for score, player in highscores.items():
+            print(f"{score: >8}: {player}")
+
 #        
 #
 #   END OF CLASS SNAKE
