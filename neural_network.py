@@ -238,7 +238,7 @@ class NeuralNetwork(Snake):
         # 3. Compare the old and new distance
         #
         # Give the snake 0.3 points, if it got closer to the apple
-        if newDistanceToApple > currentDistanceToApple: GAMESCORE += 0.3
+        if newDistanceToApple < currentDistanceToApple: GAMESCORE += 0.3
         
 
         # Check if the snake found the apple: Set the gamescore to 1, if the snake ate the apple
