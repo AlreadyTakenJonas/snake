@@ -351,7 +351,7 @@ class GameEngine:
         #
         # <<<< RENDER SNAKE AND APPLE
         
-    def play(self, fps:int=15):
+    def run(self, fps:int=15):
         """
         Play a game of snake.
 
@@ -483,13 +483,13 @@ class GameEngine:
         except Exception as e:
             # Catch any errors, close the game and reraise the exception
             print("The Game crashed!")
-            self.quitGame()
+            self.exit_run()
             raise e        
         
         # Exit the game
-        self.quitGame()
+        self.exit_run()
     
-    def quitGame(self):
+    def exit_run(self):
         """
         This routine is used to clean up afte the game has ended.
         """

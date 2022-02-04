@@ -345,9 +345,9 @@ class NeuralNetwork(GameEngine):
         save_gamestate_to : Path
             Directory where to save the gamestates?
         *args : TYPE
-            Some shit passed to self.play().
+            Some shit passed to self.run().
         **kwargs : TYPE
-            Some shit passed to self.play().
+            Some shit passed to self.run().
 
         Returns
         -------
@@ -358,11 +358,11 @@ class NeuralNetwork(GameEngine):
         save_gamestate_to = Path(save_gamestate_to)
         
         # Wipe the variable storing a list of all previous game states
-        # It will be refilled during the executiion of self.play()
+        # It will be refilled during the executiion of self.run()
         self.game_state_history = []
         
         # Play the game
-        self.play(*args, **kwargs)
+        self.run(*args, **kwargs)
         
         # Write all previous states of the game to json-file
         save_gamestate_to.write_text(json.dumps(self.game_state_history)+"\n")
