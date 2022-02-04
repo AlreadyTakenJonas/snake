@@ -29,7 +29,7 @@ LEFT, FORWARD, RIGHT = -1, 0, 1
 FLOOR, SNAKE, APPLE = 0, 1, 2
 
 
-class Snake:
+class GameEngine:
     """
     TODO: DOCSTRING
     
@@ -498,7 +498,7 @@ class Snake:
         
         # CHECK FOR NEW HIGHSCORE
         # Get the file with the highscores
-        highscoreFile = Path(__file__).parent / "highscores.yml"
+        highscoreFile = Path(__file__).parent.parent / "data/highscores.yml"
         # Read the highscore file and interpret the yaml file
         try:
             yamlData = highscoreFile.read_text()
@@ -535,5 +535,5 @@ class Snake:
 if __name__ == "__main__":
     
     # Play Snake
-    snake = Snake()
+    snake = GameEngine()
     snake.play()
