@@ -6,7 +6,7 @@ Created on Fri Feb  4 17:50:36 2022
 @author: jonas
 """
 
-from gameEngine import GameEngine
+from snake.gameEngine import GameEngine
 
 class AgentDNN(GameEngine):
     pass

@@ -11,7 +11,7 @@ This file implements a class that learns to play the game snake with a neural ne
 """
 
 # Import the snake game logic
-from gameEngine import GameEngine, FORWARD, LEFT, RIGHT
+from snake.gameEngine import GameEngine, FORWARD, LEFT, RIGHT
 
 # Import Pathlib for reading, writing files
 from pathlib import Path

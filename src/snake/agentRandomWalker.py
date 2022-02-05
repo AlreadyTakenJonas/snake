@@ -6,7 +6,7 @@ Created on Fri Feb  4 17:55:08 2022
 @author: jonas
 """
 
-from gameEngine import GameEngine
+from snake.gameEngine import GameEngine
 
 class AgentRandomWalker(GameEngine):
     pass

@@ -14,6 +14,9 @@ import random
 from pathlib import Path
 import yaml
 
+# Import some helpful code snippets
+import snake.utilities as util
+
 # Import game engine pygame
 import pygame
 import pygame.locals    
@@ -48,6 +51,9 @@ class GameEngine:
     APPLE_MARGIN = 4
     APPLE_BORDER_RADIUS = 2
     
+    # Where to store the high score list?
+    HIGHSCORE_FILE = Path("data/highscores.yml")
+        
     def __init__(self, board_width:int=32, board_height:int=18, box_size:int=BOX_SIZE, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20):
         #
         #   TODO: DOCSTRING, Initialise game score
@@ -207,7 +213,20 @@ class GameEngine:
         self.score += points
         # Reset step counter
         self.step_counter = 0
-        
+    
+    @property
+    def nextAction(self):
+        """
+        Return the next move the snake should do. This property must be implemented by the subclass.
+
+        Returns
+        -------
+        Valid Direction (int or numpy.array)
+            gameEngine.NORTH, gameEngine.EAST, gameEngine.SOUTH, gameEngine.WEST, gameEngine.LEFT, gameEngine.FORWARD, or gameEngine.RIGHT.
+
+        """     
+        raise NotImplementedError("The property gameEngine.nextAction must be implemented by the subclass! See the docstring for details.")
+    
     def move(self, direction:"NORTH, EAST, SOUTH, WEST, LEFT, FORWARD, RIGHT"):
         """
         TODO
@@ -291,8 +310,8 @@ class GameEngine:
         if collision_with_apple == True:
             # Spawn a new apple if the snake has reached the apple
             # Do not delete the tail of the snake. The snake will become longe because of that
-            self._spawn_apple()
             self._update_score()
+            self._spawn_apple()
         else:
             # Delete the tail of the snake if the apple was not reached. This will make the snake move and keep their length, because the head of the snake was already moved.
             del self.position_snake_body[-1]
@@ -351,12 +370,14 @@ class GameEngine:
         #
         # <<<< RENDER SNAKE AND APPLE
         
-    def run(self, fps:int=15):
+    def run(self, gui=True, fps:int=15):
         """
         Play a game of snake.
 
         Parameters
         ----------
+        gui: bool, optional
+            Should the game be displayed in a window?
         fps : int, optional
             Frames per Second. The default is 15.
 
@@ -365,7 +386,7 @@ class GameEngine:
         None.
 
         """
-        # Initialise game engine
+        # Initialise game engine 
         pygame.init()
         
         # Run the pygame code in a try-catch-block, so pygame can be quit savely if something goes wrong
@@ -375,106 +396,46 @@ class GameEngine:
             
             # >>>> SETUP GAME
             #
-            # Setup the game clock
-            frame_rate = pygame.time.Clock()
-            
-            # Setup display
-            SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+            if gui == True:
+                # Setup the game clock
+                frame_rate = pygame.time.Clock()
+                
+                # Setup display
+                SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+                
+                # Set the caption of the display window
+                pygame.display.set_caption(f"Snake")
             #
             # <<<< SETUP GAME
             
             # >>>> START GAME LOOP
-            # direction_stack is used to memorize which direction the player wants to go
-            direction_stack = []
-            running = True
-            pause = False
+            self.running = True
+            self.pause = False
             self.won = False
-            while running:
+            while self.running:
+                               
+                self.gameLoop_preHook()
                 
-                # Clear the screen
-                SCREEN.fill((0,0,0))
-                
-                # >>>> HANDLE EVENTS AND KEY PRESSES
-                #
-                for event in pygame.event.get():
-                    
-                    # Quit if the user closes the gui.
-                    if event.type == pygame.locals.QUIT:
-                        running = False
-                        break
-                    
-                    # Did the player press a key?
-                    if event.type == pygame.KEYDOWN:
-                        # Was the button p pressed? -> Pause the game.
-                        if event.key == pygame.K_p: pause = not pause
-                        
-                        # Check all the arrow keys and save the direction the player wants to go.
-                        # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
-                        # Important: Add key presses only to the stack if the game is not paused.
-                        if event.key == pygame.K_UP    and not pause: direction_stack.append(NORTH)
-                        if event.key == pygame.K_RIGHT and not pause: direction_stack.append(EAST)
-                        if event.key == pygame.K_LEFT  and not pause: direction_stack.append(WEST)
-                        if event.key == pygame.K_DOWN  and not pause: direction_stack.append(SOUTH)
-                
-                if self.won:
-                    # Do this part only if the player won the game. Skip the rest of the game loop.
-                    # This makes sure that the player can look at the completed game until he closes the gui.
-                    # Set the caption of the display window with the current game score
-                   pygame.display.set_caption(f"Snake - Score: {self.score} - Game Over! You won!")
-                   # Skip to the end of the loop and update the screen. Therefore not moving the snake.
-                   
-                elif pause:
-                    # Do this part only if the game is paused. Skip the rest of the game loop.
-                    # Set the caption of the display window with the current game score
-                    pygame.display.set_caption(f"Snake (PAUSED) - Score: {self.score} - press p to unpause")
-                    # Skip to the end of the loop and update the screen. Therefore not moving the snake.
-                else:
-                    # 
-                    # MOVING >>>>>>>>>>>>>>>>>>>>>>>>>>
-                    # Do this part only if the game is neither won nor paused. This code block moves the snake.
-                    try:
-                        # Get the direction the player wants to go in the next move
-                        absolute_direction = direction_stack.pop(0)
-                        
-                        #   CONVERT ABSOLUTE DIRECTIONS TO RELATIVE DIRECTIONS
-                        #   This is done, because the neural network should be trained with relative directions and I want to use games played by the user as training data.
-                        #
-                        # Get the current direction of the snake
-                        current_direction = self.position_snake_body[0]-self.position_snake_body[1]
-                        # Compute the relative direction with the inner product
-                        # This relise on the definition of snake.LEFT, snake.FORWARD and snake.RIGHT to be integers -1, 0 and 1
-                        direction = int(absolute_direction[1]*current_direction[0]-absolute_direction[0]*current_direction[1])
-                        
-                    except IndexError:
-                        # If the player didn't push a key don't change the direction
-                        direction = FORWARD
-                    #
-                    # <<<< HANDLE EVENTS AND KEY PRESSES
-                    
+                #   MOVING 
+                if self.won == self.pause == False:
                     # Move the snake by one step
                     try:
-                        self.move(direction)
+                        self.move(self.nextAction)
                     # Handle StopIteration. This is raised by self._spawn_apple() if there are no more free coordinates to spawn the apple. -> The Game was won.
                     except StopIteration as e:
-                        print(f"Congratulations! You've won the game with {self.score} points!")
                         # Remember that the player won the game. This is used to pause the game perminently. Can be used by child class to check if the game was won.
                         self.won = True
-                        
-                    # Set the caption of the display window with the current game score
-                    pygame.display.set_caption(f"Snake - Score: {self.score} - press p to pause")
-                    
-                    #
-                    #   MOVING <<<<<<<<<<<<<<<<<<<
-                    #
                     
                 # UPDATE THE SCREEN
-                    
-                # Draw the snake game to the pygame display
-                self.draw(SCREEN)
-                # Update display
-                pygame.display.update()
-                # Tick the clock
-                frame_rate.tick(FPS)            
+                if gui == True:
+                    # Clear the screen
+                    SCREEN.fill((0,0,0))
+                    # Draw the snake game to the pygame display
+                    self.draw(SCREEN)
+                    # Update display
+                    pygame.display.update()
+                    # Tick the clock
+                    frame_rate.tick(FPS)            
                 
             #
             # <<<< END GAME LOOP
@@ -488,52 +449,114 @@ class GameEngine:
         
         # Exit the game
         self.exit_run()
+        
+    def gameLoop_preHook(self):
+        """
+        This function will be called inside the run function at the start of every iteration of the game loop. Subclasses may override this function to customise the game behaviour. The function does nothing by default.
+
+        Returns
+        -------
+        None.
+
+        """
+        pass
     
     def exit_run(self):
         """
-        This routine is used to clean up afte the game has ended.
+        This routine is used to clean up after the game has ended. It's called at the end of the run method.
         """
         # END PYGAME
         pygame.quit()
+            
+    @property
+    def highscoreList(self):
+        """
+        Get a dictionary with the ten highes scores. Keys are scores, values are player names.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        # Check if high score list was already read from file. Get it if it was not read already.
+        if not hasattr(self, "_highscoreList"):
+            # Read the highscore file and interpret the yaml file
+            try:
+                yamlData = self.HIGHSCORE_FILE.read_text()
+                # Make the hsighscore list a HighscoreDict object, so the printouts are pretty.
+                self._highscoreList = util.HighscoreDict( yaml.safe_load(yamlData) )
+                # If the file does not exist, use an empty dictionary.
+            except FileNotFoundError:
+                # Make the hsighscore list a HighscoreDict object, so the printouts are pretty.
+                self._highscoreList = util.HighscoreDict()
+
+        return self._highscoreList
+    
+    @property
+    def highscore(self):
+        """
+        Return the highest score reached in the game.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        if len(self.highscoreList) == 0: 
+            return 0
+        else:
+            return max(self.highscoreList)
+    
+    @highscore.setter
+    def highscore(self, score):
+        """
+        Add a new high score to the list of high scores.
+
+        Parameters
+        ----------
+        score : TYPE, optional
+            DESCRIPTION. The default is self.score.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Get currrent high score list
+        highscoreList_tmp = self.highscoreList
         
-        # CHECK FOR NEW HIGHSCORE
-        # Get the file with the highscores
-        highscoreFile = Path(__file__).parent.parent / "data/highscores.yml"
-        # Read the highscore file and interpret the yaml file
-        try:
-            yamlData = highscoreFile.read_text()
-            highscores = yaml.safe_load(yamlData)
-        # If the file does not exist, use an empty dictionary.
-        except FileNotFoundError:
-            highscores = {}
         # Is the current score higher than all previous highscores?
-        newHighscore = self.score > max(highscores)
-        # Ask the player for his name and put it into the list of highscores, if the player reached an new highscore
-        if newHighscore == True:
-            playerName = input("Congratulations! You reached a new highscore! Enter player name: ")
-            highscores.update({self.score: playerName})
+        # Update high score list if so.
+        if score > self.highscore:
+            highscoreList_tmp.update({score: self.playerName})
         
-        # Sort the list of highscores and slice it down to maximal 10 entries in the list.
-        sortingKey = sorted(highscores, reverse=True)[:10]
-        highscores = { score:highscores[score] for score in sortingKey }
-        highscoreFile.write_text( yaml.dump(highscores) )
+            # Sort the list of highscores and slice it down to maximal 10 entries in the list.
+            sortingKey = sorted(highscoreList_tmp, reverse=True)[:10]
+            highscoreList_tmp = { score:highscoreList_tmp[score] for score in sortingKey }
         
-        # Print highscores
-        print(" <<< YOUR SCORE >>> ".center(20))
-        print(f"{self.score}".center(20))
-        print(" <<< HIGHSCORES >>> ".center(20))
-        for score, player in highscores.items():
-            print(f"{score: >8}: {player}")
+            # Update class attribute and file
+            self._highscoreList = highscoreList_tmp
+            self.HIGHSCORE_FILE.write_text( yaml.dump(self._highscoreList) )
+    
+    @property
+    def playerName(self):
+        """
+        Return the name of the player. This property must be implemented by the subclass.
+
+        Returns
+        -------
+        String
+            Player's name.
+
+        """     
+        raise NotImplementedError("The property gameEngine.playerName must be implemented by the subclass! See the docstring for details.")
+        
 
 #        
 #
-#   END OF CLASS SNAKE
+#   END OF CLASS GAMEENGINE
 #
 #   
     
-    
-if __name__ == "__main__":
-    
-    # Play Snake
-    snake = GameEngine()
-    snake.play()
