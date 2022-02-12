@@ -534,7 +534,7 @@ class GameEngine:
         
             # Sort the list of highscores and slice it down to maximal 10 entries in the list.
             sortingKey = sorted(highscoreList_tmp, reverse=True)[:10]
-            highscoreList_tmp = { score:highscoreList_tmp[score] for score in sortingKey }
+            highscoreList_tmp = util.HighscoreDict({ score:highscoreList_tmp[score] for score in sortingKey })
         
             # Update class attribute and file
             self._highscoreList = highscoreList_tmp
