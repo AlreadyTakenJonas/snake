@@ -48,10 +48,10 @@ class AgentHuman(gameEngine.GameEngine):
                 # Check all the arrow keys and save the direction the player wants to go.
                 # This allows the player to push multiple keys by turn and the game will execute each direction turn by turn
                 # Important: Add key presses only to the stack if the game is not paused.
-                if event.key == pygame.K_UP    and not self.pause: self.direction_stack.append(gameEngine.NORTH)
-                if event.key == pygame.K_RIGHT and not self.pause: self.direction_stack.append(gameEngine.EAST)
-                if event.key == pygame.K_LEFT  and not self.pause: self.direction_stack.append(gameEngine.WEST)
-                if event.key == pygame.K_DOWN  and not self.pause: self.direction_stack.append(gameEngine.SOUTH)
+                if event.key in [pygame.K_UP, pygame.K_w]    and not self.pause: self.direction_stack.append(gameEngine.NORTH)
+                if event.key in [pygame.K_RIGHT, pygame.K_d] and not self.pause: self.direction_stack.append(gameEngine.EAST)
+                if event.key in [pygame.K_LEFT, pygame.K_a]  and not self.pause: self.direction_stack.append(gameEngine.WEST)
+                if event.key in [pygame.K_DOWN, pygame.K_s]  and not self.pause: self.direction_stack.append(gameEngine.SOUTH)
         
         # Modify caption of the window
         if self.won:
