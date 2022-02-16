@@ -54,7 +54,7 @@ class GameEngine:
     # Where to store the high score list?
     HIGHSCORE_FILE = Path("data/highscores.yml")
         
-    def __init__(self, board_width:int=32, board_height:int=18, box_size:int=BOX_SIZE, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20):
+    def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3, max_score_per_apple:int=50, min_score_per_apple:int=10, max_step_to_apple:int=20, ):
         #
         #   TODO: DOCSTRING, Initialise game score
         #
@@ -78,12 +78,6 @@ class GameEngine:
                 self.POSITIONS_ON_GAME_BOARD.append((x,y))
         # Convert the list to an unmutable set, so self._spawn_apple() can subtract the set of all coordinates of the snake body from it. This way we get all unoccupied coordinates.
         self.POSITIONS_ON_GAME_BOARD = set(self.POSITIONS_ON_GAME_BOARD)
-        
-        # Check the requested size of each drawn block (important for graphics)
-        if not isinstance(box_size, int): raise ValueError("The box size must be an integer.")
-        if not box_size > 0: raise ValueError("The box size muste be bigger than 0.")
-        # The the size of each block the graphics will be build with
-        self.BOX_SIZE=box_size
         
         #   INITIALISE SNAKE
         #
