@@ -53,9 +53,6 @@ class GameEngine:
     
     # Where to store the high score list?
     HIGHSCORE_FILE = Path("data/highscores.yml")
-    
-    # Number to multiply the score with. Can be used to score games of different difficulties differently.
-    SCORE_MULTIPLIER = 1
         
     def __init__(self, board_width:int=32, board_height:int=18, initial_length:int=3, 
                  max_score_per_apple:int=50, min_score_per_apple:int=10, 
@@ -206,12 +203,8 @@ class GameEngine:
         """
         # Compute the number of points the player should get. This formula makes sure that the number of points decreases with the step counter and that there is a minimal and a maximal possible point value
         points = (self.MAXIMAL_SCORE_PER_APPLE-self.MINIMAL_SCORE_PER_APPLE) * np.exp(-(self.step_counter-1)/self.MAXIMAL_STEP_COUNT) + self.MINIMAL_SCORE_PER_APPLE
-        # Apply the score multiplier. Use this to reward different game difficulties differently.
-        points = points * self.SCORE_MULTIPLIER
         # Round the points to the neares multiple of 5.
         points = 5 * round(points/5)
-        # Make sure the game multiplier doesn't set the earned points to zero
-        if points is 0: points = self.MINIMAL_SCORE_PER_APPLE
         # Update score count (Use score multiplier to make it harder to get points in easy levels)
         self.score += points
         # Reset step counter

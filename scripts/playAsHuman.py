@@ -17,19 +17,24 @@ import argparse
 def main():
     
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('-d', '--difficulty', choices = ["easy", "normal", "hard"], help = "Select game difficulty.", default="normal")
+    parser.add_argument('-d', '--difficulty', choices = ["easy", "normal", "hard", "e", "n", "h", 0, 1, 2], help = "Select game difficulty. Available options: e(asy), n(ormal), h(ard).", default="normal", metavar = "level")
     args = parser.parse_args()
     
-    if args.difficulty == "easy":
+    if args.difficulty in ["easy", "e", 0]:
         fps = 10
-    elif args.difficulty == "normal":
+        minScorePerApple = 5
+        maxScorePerApple = 25
+    elif args.difficulty in ["normal", "n", 1]:
         fps = 15
+        minScorePerApple = 10
+        maxScorePerApple = 50
     else:
         fps = 20
+        minScorePerApple = 15
+        maxScorePerApple = 75
     
     # Play Snake
-    game = AgentHuman()
-    game.SCORE_MULTIPLIER = fps/15
+    game = AgentHuman(max_score_per_apple=maxScorePerApple, min_score_per_apple=minScorePerApple)
     game.run(fps=fps)
 
 
