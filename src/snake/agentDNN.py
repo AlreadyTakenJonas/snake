@@ -6,9 +6,10 @@ Created on Fri Feb  4 17:50:36 2022
 @author: jonas
 """
 
-from snake.gameEngine import GameEngine
+from snake.gameEngine import GameEngine, LEFT, FORWARD, RIGHT
 import tensorflow as tf
 import tflearn
+import numpy as np
 
 class AgentDNN(GameEngine):
     """
@@ -18,6 +19,8 @@ class AgentDNN(GameEngine):
     def __init__(self, dnnConstructor, preprocessor, *args, **kwargs):
         """
         Construct the neural network and call the constructor of the Game Engine.
+        
+        Notes on dnnConstructor and preprocessor: Each move preprocessor gets called with the instance of this class as argument. It must return a numpy array, that can be passed to the tflearn.DNN.predict function. The DNN must have three output neurons.
 
         Parameters
         ----------
@@ -105,6 +108,23 @@ class AgentDNN(GameEngine):
             
     @property
     def nextAction(self):
-        # Do a dimension reduction on the game state : REDUCEDGAMESTATE = self.PREPROCESS( GAMESTATE )
-        # self._brain.predict( REDUCEDGAMESTATE ) -> which way to go -> Return this value.
-        raise NotImplementedError()
+        """
+        Use the neural network in _brain and the preprocessing routine PREPROCESS to predict the best possible move.
+
+        Returns
+        -------
+        nextMove : int
+            Move the snake will do: LEFT, FORWARD or RIGHT.
+
+        """
+        # Get a 1D-vector representation (np.array) of the game state
+        gameState = self.PREPROCESS()
+        # Input the game state into the neural net and let it compute how good the possible moves LEFT, FORWARD and RIGHT are
+        nextMovePropabilities  = self._brain.predict(gameState)
+        
+        # Pick the move with the highest score / pick the best move according to the neural net.
+        possibleMoves = [LEFT, FORWARD, RIGHT]
+        nextMove = possibleMoves[ np.argmax(nextMovePropabilities) ]
+        
+        # Return the move
+        return nextMove
