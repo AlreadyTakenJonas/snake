@@ -10,6 +10,8 @@ from snake.gameEngine import GameEngine, LEFT, FORWARD, RIGHT
 import tensorflow as tf
 import tflearn
 import numpy as np
+import pygame
+from tqdm import tqdm
 
 class AgentDNN(GameEngine):
     """
@@ -52,6 +54,72 @@ class AgentDNN(GameEngine):
         
         # Call constructor of game engine
         super().__init__(*args, **kwargs)
+    
+    def run(self, iterations=1, *args, **kwargs):
+        # Create lists to keep track of stats for every game
+        gameScores = list()
+        gameWon = list()
+        gameDuration = list()
+        
+        # Run as many games as iterations required
+        for _ in tqdm(range(iterations)):
+            # Run the game
+            super().run(*args, **kwargs)
+            
+            # Remember stats of the game
+            gameScores.append(self.score)
+            gameWon.append(self.won)
+            gameDuration.append(self.gameDuration_counter)
+            
+            # Reset the gameEngine to the state it had before running the game
+            super().__init__(**self.initParameterList)
+        
+        # Average the game stats
+        averageGameScore = np.mean(gameScores)
+        averageGameWon = np.mean(gameWon)
+        averageGameDuration = np.mean(gameDuration)
+        
+        # Return the game stats
+        return averageGameScore, averageGameWon, averageGameDuration
+    
+    def gameLoop_preHook(self):
+        """
+        This function will be called before every iteration of the game loop. Handle key press events and customises caption of the game window.
+        """
+        # Are we running with gui activated? -> Give control to the player.
+        if self.guiEnabled == True:    
+            # >>>> HANDLE EVENTS AND KEY PRESSES
+            #
+            for event in pygame.event.get():
+                # Quit if the user closes the gui.
+                if event.type == pygame.locals.QUIT:
+                    self.running = False
+                    break
+                # Did the player press a key?
+                # Was the button p pressed? -> Pause the game.
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_p: self.pause = not self.pause
+                
+                
+            # Modify caption of the window
+            if self.won:
+                # Do this part only if the player won the game.
+                # This makes sure that the player can look at the completed game until he closes the gui.
+                # Set the caption of the display window with the current game score
+                pygame.display.set_caption(f"Snake - Score: {self.score} - Game Over! You won!")
+                   
+            elif self.pause:
+                # Do this part only if the game is paused.
+                # Set the caption of the display window with the current game score
+                pygame.display.set_caption(f"Snake (PAUSED) - Score: {self.score} - press p to unpause")
+            
+            else:
+                # Do this part if the game is neither paused nor won.
+                # Set the caption of the display window with the current game score
+                pygame.display.set_caption(f"Snake - Score: {self.score} - press p to pause")
+        
+        # Is the game running without gui? -> End the game loop as soon as snake is dead.
+        else:
+            if self._snake_dead == True: self.running = False
         
     def loadBrainFromFile(self, path, *args, **kwargs):
         """
@@ -118,13 +186,13 @@ class AgentDNN(GameEngine):
 
         """
         # Get a 1D-vector representation (np.array) of the game state
-        gameState = self.PREPROCESS()
+        gameState = self.PREPROCESS(self)
         # Input the game state into the neural net and let it compute how good the possible moves LEFT, FORWARD and RIGHT are
         nextMovePropabilities  = self._brain.predict(gameState)
         
         # Pick the move with the highest score / pick the best move according to the neural net.
         possibleMoves = [LEFT, FORWARD, RIGHT]
         nextMove = possibleMoves[ np.argmax(nextMovePropabilities) ]
-        
+
         # Return the move
         return nextMove

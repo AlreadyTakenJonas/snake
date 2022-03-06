@@ -61,6 +61,16 @@ class GameEngine:
         #   TODO: DOCSTRING, Initialise game score
         #
         
+        # Remember all parameters given on initialisation. Can be used to reset the gameEngine to its initial state.
+        self.initParameterList = {
+            "board_width": board_width,
+            "board_height": board_height, 
+            "initial_length": initial_length, 
+            "max_score_per_apple": max_score_per_apple, 
+            "min_score_per_apple": min_score_per_apple, 
+            "max_step_to_apple": max_step_to_apple
+        }
+        
         #   SET BOARD SIZE
         # 
         # Check the requested size of the board
@@ -120,6 +130,8 @@ class GameEngine:
         self.score = 0
         # Step counter. Integer keeping track of how many steps the player needed to get the apple. Used for score computation
         self.step_counter = 0
+        # Step counter. How many moves did the game last?
+        self.gameDuration_counter = 0
         
     def _get_max_x(self):
         """
@@ -294,6 +306,8 @@ class GameEngine:
         #
         # Increase the step counter by one. This is used for the score computation. The faster the player gets the apple, the more points he gets.
         self.step_counter += 1
+        # Increase total step counter by one. Used to keep track on how long the game lasted.
+        self.gameDuration_counter += 1
         
         # Compute the future position of the snakes head
         future_snake_head_position = self.position_snake_body[0] + direction
@@ -382,6 +396,7 @@ class GameEngine:
         None.
 
         """
+        self.guiEnabled = gui
         # Initialise game engine 
         pygame.init()
         
@@ -392,7 +407,7 @@ class GameEngine:
             
             # >>>> SETUP GAME
             #
-            if gui == True:
+            if self.guiEnabled == True:
                 # Setup the game clock
                 frame_rate = pygame.time.Clock()
                 
@@ -423,7 +438,7 @@ class GameEngine:
                         self.won = True
                     
                 # UPDATE THE SCREEN
-                if gui == True:
+                if self.guiEnabled == True:
                     # Clear the screen
                     SCREEN.fill((0,0,0))
                     # Draw the snake game to the pygame display
