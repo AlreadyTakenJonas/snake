@@ -173,6 +173,32 @@ class AgentDNN(GameEngine):
             # This function should map a unique index to every weight and bias of the neural network in self._brain
             # Implement raise StopIteration() to make the object iterable. 
             raise NotImplementedError()
+    
+    @property
+    def brainMap(self):
+        """
+        Get a dictionary mapping an index to a tensorflow variable of the DNN.
+        All indices smaller than the key of the dictionary should be mapped on to the tensorflow variable (a tensor) stored in the corresponding value.
+        The current key is the sum of the previous key and the last index of the key's value.
+        
+        Parameters
+        ----------
+        None.
+
+        Returns
+        -------
+        Dictionary mapping indices to tensorflow variables of the DNN.
+        """
+        with self._brain.session:
+            if not hasattr(self, "_brainMap"):
+                brainMap = dict()
+                maxIndexForVariable = 0
+                for var in tflearn.variables.get_all_trainable_variable():
+                    maxIndexForVariable = maxIndexForVariable + np.prod(var.shape)
+                    brain[maxIndexForVariable] = var                   
+                self._brainMap = brainMap
+        
+            return self._brainMap
             
     @property
     def nextAction(self):
