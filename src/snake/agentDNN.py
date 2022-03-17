@@ -165,11 +165,31 @@ class AgentDNN(GameEngine):
     def __getitem__(self, index):
         if isinstance(index, int) == False: raise TypeError("Index must be integer!")
         with self._brain.session:
-            # Get all trainable tensorflow variables
-            # Return one weight or bias of one tensorflow variable depending on the given index
-            # This function should map a unique index to every weight and bias of the neural network in self._brain
-            # Implement raise StopIteration() to make the object iterable. 
-            raise NotImplementedError()
+            # Loop over dictionary with all trainable tensorflow variables (tensors with weights and tensors with biases)
+            # Keys are the length (number of elements) of the tensor (saved as value of key) plus the length of all previous tensors in the dictionary.
+            # This loop finds the tensorflow variable ("tensor") containing the element the given index is associated with.
+            # Which tensor contains the element the given index is referring to?
+            for length, tensor in self.brainMap.items():
+                # Is the smaller than the biggest index ("length") mapped to the tensorflow variable "tensor"?
+                # Break the loop if it is.
+                if index < length: break
+                         
+            # The loop ran over all key-value-pairs and didn't found a matching value.
+            # The index must be out of range.
+            # Raise an IndexError to make the object iterable
+            else:
+                raise IndexError("Index out of range.")
+    
+        # Subtract the number of elements of all tensors in the list before this one.
+        # In other words. Take the index of an element of the DNN (given as parameter) and convert it to an index of the tensor found by the for loop.
+        # Which element of the tensor is meant by the given index?
+        # Length is the sum of the number of elements in all tensors that are listed in the dictionary before and including this one. Add the product of the dimensions to only subtract the previous tensor's length.
+        index = index - length + np.prod(tensor.shape)
+        
+        # Is the tensor a vector or a matrix?
+        # Convert index into usable indices and return the element.
+        # Write docstring
+        # Write __setitem__
     
     @property
     def brainMap(self):
