@@ -40,11 +40,8 @@ class AgentDNN(GameEngine):
         None.
 
         """
-        # Get a graph object to have a seperate namespace for the tf variables
-        self.TENSORFLOW_NAMESPACE = tf.Graph()
-        
         # Create the deep neural network by calling the dnnConstructor
-        with self.TENSORFLOW_NAMESPACE.as_default():
+        with self._brain.session:
             self._brain = dnnConstructor()
             # Did the callable return a deep neural network?
             assert isinstance(self._brain, tflearn.DNN), "dnnConstructor must return an instance of tflearn.DNN!"
@@ -140,7 +137,7 @@ class AgentDNN(GameEngine):
 
         """
         # Load the weights of the DNN from file
-        with self.TENSORFLOW_NAMESPACE.as_default():
+        with self._brain.session:
             self._brain.load(str(path), *args, **kwargs)
             
     def saveBrainToFile(self, path, *args, **kwargs):
@@ -162,12 +159,12 @@ class AgentDNN(GameEngine):
 
         """
         # Save the weights of the DNN to file
-        with self.TENSORFLOW_NAMESPACE.as_default():
+        with self._brain.session:
             self._brain.save(str(path), *args, **kwargs)
         
     def __getitem__(self, index):
         if isinstance(index, int) == False: raise TypeError("Index must be integer!")
-        with self.TENSORFLOW_NAMESPACE.as_default():
+        with self._brain.session:
             # Get all trainable tensorflow variables
             # Return one weight or bias of one tensorflow variable depending on the given index
             # This function should map a unique index to every weight and bias of the neural network in self._brain
@@ -190,14 +187,22 @@ class AgentDNN(GameEngine):
         Dictionary mapping indices to tensorflow variables of the DNN.
         """
         with self._brain.session:
+            # Create the brainMap if it does not exist yet.
             if not hasattr(self, "_brainMap"):
                 brainMap = dict()
                 maxIndexForVariable = 0
+                # Loop over all trainable tensorflow variables (in the scope of the DNN of this instance).
                 for var in tflearn.variables.get_all_trainable_variable():
+                    # Add the length of the current tensor to the running counter
                     maxIndexForVariable = maxIndexForVariable + np.prod(var.shape)
+                    # Add key value pair to dictionary.
+                    # The key is the running counter (sum of lengths of all tensors so far).
+                    # The value is the tensorflow variable with the weights or biases of one DNN layer.
                     brain[maxIndexForVariable] = var                   
+                # Make brainMap an attribute of the instance.
                 self._brainMap = brainMap
-        
+            
+            # Return the brainMap
             return self._brainMap
             
     @property
