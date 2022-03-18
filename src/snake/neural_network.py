@@ -6,12 +6,12 @@ Created on Mon Jun 28 18:02:18 2021
 @author: jonas
 
 
-This file implements a class that learns to play the game snake with a neural network. The class inherits from the Snake class (that's where the game logic is implemented).
+This file implements a class that learns to play the game snake with a neural network. The class inherits from the GameEngine class (that's where the game logic is implemented).
 
 """
 
 # Import the snake game logic
-from snake import Snake, FORWARD, LEFT, RIGHT
+from snake.gameEngine import GameEngine, FORWARD, LEFT, RIGHT
 
 # Import Pathlib for reading, writing files
 from pathlib import Path
@@ -29,9 +29,9 @@ import numpy as np
 import tflearn as tfl
 
 
-class NeuralNetwork(Snake):
+class NeuralNetwork(GameEngine):
     """
-    This class inherits the game logic from the Snake class and trys to learn ply the game snake with a neural network
+    This class inherits the game logic from the GameEngine class and trys to learn ply the game snake with a neural network
     """
     
   
@@ -42,9 +42,9 @@ class NeuralNetwork(Snake):
         Parameters
         ----------
         *args : 
-            Passed to Snake class.
+            Passed to GameEngine class.
         **kwargs :
-            Passed to Snake class.
+            Passed to GameEngine class.
 
         Returns
         -------
@@ -337,7 +337,7 @@ class NeuralNetwork(Snake):
     def generate_human_training_data(self, save_gamestate_to:Path, *args, **kwargs):
         """
         Wrapper for Snake.play() method. This is used to generate training data from the games played by a human.
-        This wrapper saves the location of a file, where the gamestates will be saved after every move and then it calls it's play() method (inherited from Snake class).
+        This wrapper saves the location of a file, where the gamestates will be saved after every move and then it calls it's play() method (inherited from GameEngine class).
         The NeuralNetwork method move() uses the file path to save the gamestate. 
 
         Parameters
@@ -345,9 +345,9 @@ class NeuralNetwork(Snake):
         save_gamestate_to : Path
             Directory where to save the gamestates?
         *args : TYPE
-            Some shit passed to self.play().
+            Some shit passed to self.run().
         **kwargs : TYPE
-            Some shit passed to self.play().
+            Some shit passed to self.run().
 
         Returns
         -------
@@ -358,11 +358,11 @@ class NeuralNetwork(Snake):
         save_gamestate_to = Path(save_gamestate_to)
         
         # Wipe the variable storing a list of all previous game states
-        # It will be refilled during the executiion of self.play()
+        # It will be refilled during the executiion of self.run()
         self.game_state_history = []
         
         # Play the game
-        self.play(*args, **kwargs)
+        self.run(*args, **kwargs)
         
         # Write all previous states of the game to json-file
         save_gamestate_to.write_text(json.dumps(self.game_state_history)+"\n")
@@ -471,7 +471,7 @@ class NeuralNetwork(Snake):
                 game_file.write_text(json.dumps(self.game_state_history)+"\n")
                 
             
-                # Rerun the constructor of the Snake class. This resets the state of the game. 
+                # Rerun the constructor of the GameEngine class. This resets the state of the game. 
                 # Make sure to pass all arguments, if you're not using the default settings!
                 super().__init__(board_width=self.BOARD_SIZE[0], board_height=self.BOARD_SIZE[1], box_size=self.BOX_SIZE, 
                                  initial_length=self.initial_length, max_score_per_apple=self.MAXIMAL_SCORE_PER_APPLE,
@@ -492,6 +492,6 @@ if __name__ == "__main__":
     snake = NeuralNetwork()
     
     # Start a game of snake
-    save_games_to = Path(f"/home/jonas/code/python/snake/training_data/human_walk/humanGame_{int(time.time())}.json")
+    save_games_to = Path(f"/home/jonas/code/python/snake/data/gameHistories/human_walk/humanGame_{int(time.time())}.json")
     snake.generate_human_training_data(save_gamestate_to=save_games_to)
-    #snake.preprocess_trainingDataFile(["/home/jonas/code/python/snake/training_data/human_walk"])
+    #snake.preprocess_trainingDataFile(["/home/jonas/code/python/snake/data/gameHistories/human_walk"])

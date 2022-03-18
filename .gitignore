@@ -1,2 +1,5 @@
 conda_env/
-__pycache__/
+**/__pychache__/
+**/Snake.egg-info/
+build/
+dist/
