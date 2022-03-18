@@ -32,6 +32,7 @@ with model.session as sess:
     # Map index to index in matrix
     
     vector = tflearn.variables.get_value(var[0])
+    print(vector.ndim)
     for i in range(192):
         k = i % vector.shape[-1]
         j = int( (i - k)/vector.shape[-1])
