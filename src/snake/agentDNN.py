@@ -41,10 +41,9 @@ class AgentDNN(GameEngine):
 
         """
         # Create the deep neural network by calling the dnnConstructor
-        with self._brain.session:
-            self._brain = dnnConstructor()
-            # Did the callable return a deep neural network?
-            assert isinstance(self._brain, tflearn.DNN), "dnnConstructor must return an instance of tflearn.DNN!"
+        self._brain = dnnConstructor()
+        # Did the callable return a deep neural network?
+        assert isinstance(self._brain, tflearn.DNN), "dnnConstructor must return an instance of tflearn.DNN!"
         
         # Saving the prerpocessing routine as attribute
         self.PREPROCESS = preprocessor
