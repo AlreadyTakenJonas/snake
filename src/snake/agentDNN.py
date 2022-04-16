@@ -161,42 +161,43 @@ class AgentDNN(GameEngine):
         with self._brain.session:
             self._brain.save(str(path), *args, **kwargs)
         
-    def __getitem__(self, index):
+    def _readBrainMap(self, index):
         
         # Write docstring
         # Write __setitem__
         # Write cache that knows, if __setitem__ changed something in the DNN.
         
         if isinstance(index, int) == False: raise TypeError("Index must be integer!")
-        with self._brain.session:
-            # Loop over dictionary with all trainable tensorflow variables (tensors with weights and tensors with biases)
-            # Keys are the length (number of elements) of the tensor (saved as value of key) plus the length of all previous tensors in the dictionary.
-            # This loop finds the tensorflow variable ("var") containing the element the given index is associated with.
-            # Which tensor contains the element the given index is referring to?
-            for length, var in self.brainMap.items():
-                # Is the smaller than the biggest index ("length") mapped to the tensorflow variable "tensor"?
-                # Break the loop if it is.
-                if index < length: break
-                         
-            # The loop ran over all key-value-pairs and didn't found a matching value.
-            # The index must be out of range.
-            # Raise an IndexError to make the object iterable
-            else:
-                raise IndexError("Index out of range.")
+        
+        # Loop over dictionary with all trainable tensorflow variables (tensors with weights and tensors with biases)
+        # Keys are the length (number of elements) of the tensor (saved as value of key) plus the length of all previous tensors in the dictionary.
+        # This loop finds the tensorflow variable ("var") containing the element the given index is associated with.
+        # Which tensor contains the element the given index is referring to?
+        for length, var in self.brainMap.items():
+            # Is the index smaller than the biggest index ("length") mapped to the tensorflow variable "tensor"?
+            # Break the loop if it is.
+            if index < length: break
+                     
+        # The loop ran over all key-value-pairs and didn't found a matching value.
+        # The index must be out of range.
+        # Raise an IndexError to make the object iterable
+        else:
+            raise IndexError("Index out of range.")
     
-        # Get the tensor of the tensorflow variable
-        tensor = tflearn.variables.get_value(var)
+        with self._brain.session:
+            # Get the tensor of the tensorflow variable
+            tensor = tflearn.variables.get_value(var)
     
         # Subtract the number of elements of all tensors in the list before this one.
         # In other words. Take the index of an element of the DNN (given as parameter) and convert it to an index of the tensor found by the for loop.
         # Which element of the tensor is meant by the given index?
-        # Length is the sum of the number of elements in all tensors that are listed in the dictionary before and including this one. Add the product of the dimensions to only subtract the previous tensor's length.
+        # Length is the sum of the number of elements in all tensors that are listed in the dictionary before and including this one. Add the product of the dimensions to only subtract the previous tensors' length.
         index = index - length + np.prod(tensor.shape)
         
         # Is the tensor a vector with biases?
         if tensor.ndim is 1:
             # Select one element from the vector.
-            item = tensor[index]
+            pass# item = tensor[index]
         # Is the tensor a matrix with weights?
         elif tensor.ndim is 2:
             # Get the row and column in the selected tensor corresponding to the given index.
@@ -204,16 +205,37 @@ class AgentDNN(GameEngine):
             j = index % tensor.shape[1]
             i = int( (index - j)/tensor.shape[1] )
             # Select the element from the matrix.
-            item = tensor[i][j]
+            index = [i, j]#item = tensor[i][j]
         # Something went wrong.
         else:
             raise NotImplementedError(f"Can't handle tensors with {tensor.ndim} dimensions. Only support for 1 or 2 dimensions.")
         
         # Return the selected element.
+        return var, tensor, index#return item
+        
+    def __getitem__(self, index):
+        _, tensor, index = self._readBrainMap(index)
+        
+        if tensor.ndim is 1:
+            item = tensor[index]
+        else:
+            item = tensor[index[0], index[1]]
+            
         return item
     
     def __setitem__(self, index, value):
-        pass
+        if not isinstance(value, float) or not isinstance(value, int):
+            raise TypeError(f"Type of value must be int or float, not {type(value)}!")
+    
+        tfvar, tensor, tensorIndex = self._readBrainMap(index)
+        
+        if tensor.ndim is 1:
+            tensor[tensorIndex] = value
+        else:
+            tensor[tensorIndex[0], tensorIndex[1]] = value
+            
+        with self._brain.session:
+            tflearn.variables.set_value(tfvar, tensor)
     
     @property
     def brainMap(self):
@@ -244,7 +266,7 @@ class AgentDNN(GameEngine):
                     # Add key value pair to dictionary.
                     # The key is the running counter (sum of lengths of all tensors so far).
                     # The value is the tensorflow variable with the weights or biases of one DNN layer.
-                    brain[maxIndexForVariable] = var                   
+                    brainMap[maxIndexForVariable] = var                   
                 # Make brainMap an attribute of the instance.
                 self._brainMap = brainMap
             
