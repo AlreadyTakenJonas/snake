@@ -32,8 +32,17 @@ def preprocessGameState(gameEngine):
 def main():
     
     game = AgentDNN(createDNN, preprocessGameState)
-    averageScore, averageWon, averageDuration = game.run(fps=10, gui=True, iterations=10)
-    print(f"Averages\nScore: {averageScore}\nWin: {averageWon}\nDuration: {averageDuration}")
+    #averageScore, averageWon, averageDuration = game.run(fps=10, gui=True, iterations=10)
+    #print(f"Averages\nScore: {averageScore}\nWin: {averageWon}\nDuration: {averageDuration}")
 
+    #dnn = createDNN()
+    #with dnn.session as sess:
+    #    print(sess)
+     
+    print(game[0])
+     
+    #for i in game:
+    #    print(i)
+    
 if __name__ == "__main__":
     main()
