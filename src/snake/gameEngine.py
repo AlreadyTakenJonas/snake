@@ -446,7 +446,9 @@ class GameEngine:
                     # Update display
                     pygame.display.update()
                     # Tick the clock
-                    frame_rate.tick(FPS)            
+                    frame_rate.tick(FPS)   
+
+                self.gameLoop_postHook()
                 
             #
             # <<<< END GAME LOOP
@@ -464,6 +466,17 @@ class GameEngine:
     def gameLoop_preHook(self):
         """
         This function will be called inside the run function at the start of every iteration of the game loop. Subclasses may override this function to customise the game behaviour. The function does nothing by default.
+
+        Returns
+        -------
+        None.
+
+        """
+        pass
+    
+    def gameLoop_postHook(self):
+        """
+        This function will be called inside the run function at the end of every iteration of the game loop. Subclasses may override this function to customise the game behaviour. The function does nothing by default.
 
         Returns
         -------

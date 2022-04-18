@@ -18,7 +18,7 @@ class AgentDNN(GameEngine):
     This Agent decides its movements with a deep neural network. This class contains methods to manipulate and manage the corresponding deep neural net.
     """
     
-    def __init__(self, dnnConstructor, preprocessor, *args, **kwargs):
+    def __init__(self, dnn, preprocessor, *args, **kwargs):
         """
         Construct the neural network and call the constructor of the Game Engine.
         
@@ -26,8 +26,8 @@ class AgentDNN(GameEngine):
 
         Parameters
         ----------
-        dnnConstructor : callable
-            Callable returning an instance of tflearn.dnn class.
+        dnn : instance of tflearn's DNN class
+            deep neural network (an instance of tflearn.dnn class) to controll the movement of the snake.
         preprocessor : callable
             Callable performing the preprocessing of the game state before feeding the game state into the DNN.
         *args : positional arguments
@@ -40,10 +40,10 @@ class AgentDNN(GameEngine):
         None.
 
         """
-        # Create the deep neural network by calling the dnnConstructor
-        self._brain = dnnConstructor()
+        # Save the deep neural network as attribute
+        self.brain = dnn
         # Did the callable return a deep neural network?
-        assert isinstance(self._brain, tflearn.DNN), "dnnConstructor must return an instance of tflearn.DNN!"
+        assert isinstance(self.brain, tflearn.DNN), "dnn must be an instance of tflearn.DNN!"
         
         # Saving the prerpocessing routine as attribute
         self.PREPROCESS = preprocessor
@@ -51,11 +51,12 @@ class AgentDNN(GameEngine):
         # Call constructor of game engine
         super().__init__(*args, **kwargs)
     
-    def run(self, iterations=1, *args, **kwargs):
+    def run(self, iterations=1, maxStepsPerApple=25, *args, **kwargs):
         # Create lists to keep track of stats for every game
         gameScores = list()
         gameWon = list()
         gameDuration = list()
+        self.maxStepsPerApple = maxStepsPerApple
         
         # Run as many games as iterations required
         for _ in tqdm(range(iterations)):
@@ -77,6 +78,11 @@ class AgentDNN(GameEngine):
         
         # Return the game stats
         return averageGameScore, averageGameWon, averageGameDuration
+    
+    def gameLoop_postHook(self):
+        # If the snake is taking to long to find the apple, end the game.
+        if self.step_counter >= self.maxStepsPerApple:
+            self.running = False
     
     def gameLoop_preHook(self):
         """
@@ -116,167 +122,11 @@ class AgentDNN(GameEngine):
         # Is the game running without gui? -> End the game loop as soon as snake is dead.
         else:
             if self._snake_dead == True: self.running = False
-        
-    def loadBrainFromFile(self, path, *args, **kwargs):
-        """
-        Load weights of preexisting neural network from file.
-
-        Parameters
-        ----------
-        path : string / Path object
-            Path to saved DNN model.
-        *args : positional arguments
-            Passed on to tflearn.DNN.load.
-        **kwargs : optional arguments
-            Passed on to tflearn.DNN.load.
-
-        Returns
-        -------
-        None.
-
-        """
-        # Load the weights of the DNN from file
-        with self._brain.session:
-            self._brain.load(str(path), *args, **kwargs)
-            
-    def saveBrainToFile(self, path, *args, **kwargs):
-        """
-        Save the weights of the DNN to file.
-
-        Parameters
-        ----------
-        path : string / Path object
-            Path to save DNN model to.
-        *args : positional arguments
-            Passed on to tflearn.DNN.load.
-        **kwargs : optional arguments
-            Passed on to tflearn.DNN.load.
-
-        Returns
-        -------
-        None.
-
-        """
-        # Save the weights of the DNN to file
-        with self._brain.session:
-            self._brain.save(str(path), *args, **kwargs)
-        
-    def _readBrainMap(self, index):
-        
-        # Write docstring
-        # Write __setitem__
-        # Write cache that knows, if __setitem__ changed something in the DNN.
-        
-        if isinstance(index, int) == False: raise TypeError("Index must be integer!")
-        
-        # Loop over dictionary with all trainable tensorflow variables (tensors with weights and tensors with biases)
-        # Keys are the length (number of elements) of the tensor (saved as value of key) plus the length of all previous tensors in the dictionary.
-        # This loop finds the tensorflow variable ("var") containing the element the given index is associated with.
-        # Which tensor contains the element the given index is referring to?
-        for length, var in self.brainMap.items():
-            # Is the index smaller than the biggest index ("length") mapped to the tensorflow variable "tensor"?
-            # Break the loop if it is.
-            if index < length: break
-                     
-        # The loop ran over all key-value-pairs and didn't found a matching value.
-        # The index must be out of range.
-        # Raise an IndexError to make the object iterable
-        else:
-            raise IndexError("Index out of range.")
-    
-        with self._brain.session:
-            # Get the tensor of the tensorflow variable
-            tensor = tflearn.variables.get_value(var)
-    
-        # Subtract the number of elements of all tensors in the list before this one.
-        # In other words. Take the index of an element of the DNN (given as parameter) and convert it to an index of the tensor found by the for loop.
-        # Which element of the tensor is meant by the given index?
-        # Length is the sum of the number of elements in all tensors that are listed in the dictionary before and including this one. Add the product of the dimensions to only subtract the previous tensors' length.
-        index = index - length + np.prod(tensor.shape)
-        
-        # Is the tensor a vector with biases?
-        if tensor.ndim is 1:
-            # Select one element from the vector.
-            pass# item = tensor[index]
-        # Is the tensor a matrix with weights?
-        elif tensor.ndim is 2:
-            # Get the row and column in the selected tensor corresponding to the given index.
-            # i is the first index of the matrix element, j is the second index of the matrix element.
-            j = index % tensor.shape[1]
-            i = int( (index - j)/tensor.shape[1] )
-            # Select the element from the matrix.
-            index = [i, j]#item = tensor[i][j]
-        # Something went wrong.
-        else:
-            raise NotImplementedError(f"Can't handle tensors with {tensor.ndim} dimensions. Only support for 1 or 2 dimensions.")
-        
-        # Return the selected element.
-        return var, tensor, index#return item
-        
-    def __getitem__(self, index):
-        _, tensor, index = self._readBrainMap(index)
-        
-        if tensor.ndim is 1:
-            item = tensor[index]
-        else:
-            item = tensor[index[0], index[1]]
-            
-        return item
-    
-    def __setitem__(self, index, value):
-        if not isinstance(value, float) or not isinstance(value, int):
-            raise TypeError(f"Type of value must be int or float, not {type(value)}!")
-    
-        tfvar, tensor, tensorIndex = self._readBrainMap(index)
-        
-        if tensor.ndim is 1:
-            tensor[tensorIndex] = value
-        else:
-            tensor[tensorIndex[0], tensorIndex[1]] = value
-            
-        with self._brain.session:
-            tflearn.variables.set_value(tfvar, tensor)
-    
-    @property
-    def brainMap(self):
-        """
-        Get a dictionary mapping an index to a tensorflow variable of the DNN.
-        All indices smaller than the key of the dictionary should be mapped on to the tensorflow variable (a tensor) stored in the corresponding value.
-        The current key is the sum of the previous key and the last index of the key's value.
-        
-        Parameters
-        ----------
-        None.
-
-        Returns
-        -------
-        Dictionary mapping indices to tensorflow variables of the DNN.
-        """
-        with self._brain.session:
-            # Create the brainMap if it does not exist yet.
-            if not hasattr(self, "_brainMap"):
-                brainMap = dict()
-                maxIndexForVariable = 0
-                # Loop over all trainable tensorflow variables (in the scope of the DNN of this instance).
-                for var in tflearn.variables.get_all_trainable_variable():
-                    # Get the tensor of the current tensorflow variable
-                    tensor = tflearn.variables.get_value(var)
-                    # Add the length of the current tensor to the running counter
-                    maxIndexForVariable = maxIndexForVariable + np.prod(tensor.shape)
-                    # Add key value pair to dictionary.
-                    # The key is the running counter (sum of lengths of all tensors so far).
-                    # The value is the tensorflow variable with the weights or biases of one DNN layer.
-                    brainMap[maxIndexForVariable] = var                   
-                # Make brainMap an attribute of the instance.
-                self._brainMap = brainMap
-            
-            # Return the brainMap
-            return self._brainMap
-            
+                         
     @property
     def nextAction(self):
         """
-        Use the neural network in _brain and the preprocessing routine PREPROCESS to predict the best possible move.
+        Use the neural network in brain and the preprocessing routine PREPROCESS to predict the best possible move.
 
         Returns
         -------
@@ -287,11 +137,16 @@ class AgentDNN(GameEngine):
         # Get a 1D-vector representation (np.array) of the game state
         gameState = self.PREPROCESS(self)
         # Input the game state into the neural net and let it compute how good the possible moves LEFT, FORWARD and RIGHT are
-        nextMovePropabilities  = self._brain.predict(gameState)
+        nextMovePropabilities  = self.brain.predict(gameState)
+        
+#        print(f"Output vector: {nextMovePropabilities}")
         
         # Pick the move with the highest score / pick the best move according to the neural net.
         possibleMoves = [LEFT, FORWARD, RIGHT]
         nextMove = possibleMoves[ np.argmax(nextMovePropabilities) ]
 
+ #       print(f"Possible moves: {possibleMoves}")
+  #      print(f"Chosen move: {nextMove}")
+        
         # Return the move
         return nextMove
