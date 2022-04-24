@@ -88,12 +88,12 @@ class BrainDNN(tflearn.DNN):
         return var, tensor, index#return item
         
     def __getitem__(self, index):
-        _, tensor, index = self._readBrainMap(index)
+        _, tensor, tensorIndex = self._readBrainMap(index)
         
         if tensor.ndim is 1:
-            item = tensor[index]
+            item = tensor[tensorIndex]
         else:
-            item = tensor[index[0], index[1]]
+            item = tensor[tensorIndex[0], tensorIndex[1]]
             
         return item
     
