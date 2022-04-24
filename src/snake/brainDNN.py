@@ -39,8 +39,13 @@ class BrainDNN(tflearn.DNN):
     def _readBrainMap(self, index):
         
         # Write docstring
-        # Write __setitem__
         # Write cache that knows, if __setitem__ changed something in the DNN.
+        #   For the cache:  get list of brainMap keys, sort them in ascending order
+        #                   loop over the keys to find the correct tensorflow variable
+        #                   get the previous key in the list
+        #                   cache the tensorflow variable, the key that broke the loop and the previous key
+        #                   return tensor of cached tensorflow variable if the given index is between and not equal both cached keys of the brainmap.
+        #                   Cache i and j? Need to cache given index for that.
         
         if isinstance(index, int) == False: raise TypeError("Index must be integer!")
         

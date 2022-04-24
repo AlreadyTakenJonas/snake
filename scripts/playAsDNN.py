@@ -114,7 +114,15 @@ def main():
     
     with brain.session:
         gradient, magnitude = getGradient(brain, gameSettings)
+        
+        print("Add gradient to DNN weights ...")
+        import time
+        start = time.time()
         brain += gradient
+        end = time.time()
+        additionTime = end - start
+        print("Adding took {additionTime} seconds.")
+        
         gradient2, magnitude2 = getGradient(brain, gameSettings)
         
         print("DELTA MAGNITUDE")
@@ -122,6 +130,7 @@ def main():
     
         print("DELTA VECTOR")
         print(gradient2-gradient)
+        
         
 if __name__ == "__main__":
     main()
