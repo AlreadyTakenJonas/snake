@@ -17,7 +17,25 @@ class BrainDNN(tflearn.DNN):
     def __init__(self, *args, **kwargs):
         # Call constructor of tflearn.DNN
         super().__init__(*args, **kwargs)
+        
+    def __iadd__(self, other):
+        assert np.iterable(a), "Can only add iterables!"
+        assert len(other) == len(self), "Can't add vectors of different length!"
+        
+        for index, (s, o) in enumerate( zip(self, other) ):
+            self[index] = s + o
+        
+        return self
+    
+    def __isub__(self, other):
+        assert np.iterable(a), "Can only subtract iterables!"
+        assert len(other) == len(self), "Can't subtract vectors of different length!"
+        
+        for index, (s, o) in enumerate( zip(self, other) ):
+            self[index] = s - o
                     
+        return self
+    
     def _readBrainMap(self, index):
         
         # Write docstring

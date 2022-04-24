@@ -113,7 +113,15 @@ def main():
     gameSettings = {"maxStepsPerApple": 25, "gui":False, "fps":10, "iterations":10}
     
     with brain.session:
-        _, _ = getGradient(brain, gameSettings)
+        gradient, magnitude = getGradient(brain, gameSettings)
+        brain += gradient
+        gradient2, magnitude2 = getGradient(brain, gameSettings)
+        
+        print("DELTA MAGNITUDE")
+        print(magnitude2-magnitude)
     
+        print("DELTA VECTOR")
+        print(gradient2-gradient)
+        
 if __name__ == "__main__":
     main()
