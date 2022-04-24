@@ -51,7 +51,8 @@ class AgentDNN(GameEngine):
         # Call constructor of game engine
         super().__init__(*args, **kwargs)
     
-    def run(self, iterations=1, maxStepsPerApple=25, *args, **kwargs):
+    def run(self, iterations=1, maxStepsPerApple=25, 
+            tqdmSettings = {"desc": "Running Games"}, *args, **kwargs):
         # Create lists to keep track of stats for every game
         gameScores = list()
         gameWon = list()
@@ -59,7 +60,7 @@ class AgentDNN(GameEngine):
         self.maxStepsPerApple = maxStepsPerApple
         
         # Run as many games as iterations required
-        for _ in tqdm(range(iterations)):
+        for _ in tqdm(range(iterations), **tqdmSettings):
             # Run the game
             super().run(*args, **kwargs)
             

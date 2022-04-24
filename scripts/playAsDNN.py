@@ -10,7 +10,7 @@ from snake.agentDNN import AgentDNN
 import tflearn
 from snake.brainDNN import BrainDNN
 import numpy as np
-
+from tqdm import tqdm
 
 def createDNN():
     net = tflearn.input_data(shape=[None, 3])
@@ -49,38 +49,71 @@ def preprocessGameState(gameEngine):
     
     return gameState
     
+
+def getGradient(brain, gameSettings, stepsize = 0.1,
+                gradientScoreBias = 1, gradientDurationBias = 1, gradientWinBias = 1):
+    """
+    Let the DNN play the game and nudge the weights a little bit. Compute the gradient of the game performance plotted against the weights of the network.
+    """
+    
+    print("""
+          **********************
+           GRADIENT CALCULATION
+          **********************
+          
+          """)
+    
+    totalBias = gradientScoreBias + gradientDurationBias + gradientWinBias
+    scoreBias = gradientScoreBias / totalBias
+    durationBias = gradientDurationBias / totalBias
+    winBias = gradientWinBias / totalBias
+    
+    # Create empty gradient vector
+    dim = len(brain)
+    gradient = np.zeros(dim)
+    
+    # Get the current game performance
+    currentScore, currentWon, currentDuration = AgentDNN(brain, preprocessGameState).run(**gameSettings, tqdmSettings={"desc": "Measure Current Performance"})
+    
+    # Loop over all weights and biases
+    for index, value in tqdm(enumerate(brain), 
+                             position=0, leave=False, desc="Compute Gradient Vector", total=dim):
+        
+        # Nudge the current weight
+        brain[index] = value + stepsize
+            
+        # Get the new game performance
+        nextScore, nextWon, nextDuration = AgentDNN(brain, preprocessGameState).run(**gameSettings, tqdmSettings={"desc": "Compute Gradient Element", "position":1, "leave":False})
+            
+        # Compute one element of the gradient
+        # Use the biases to make the 3 different scores differently important (average duration of game, average score of the game, how often did the player win on average).
+        gradient[index] = durationBias*(nextDuration - currentDuration)/stepsize + scoreBias*(nextScore - currentScore)/stepsize + winBias*(nextWon - currentWon)/stepsize
+        
+        # Reset the current weight to its original value            
+        brain[index] = value
+    
+    # Normalise the gradient
+    magnitude = np.linalg.norm(gradient)
+    gradient = gradient / magnitude
+    
+    print("GRADIENT RESULT")
+    print("gradient magnitude")
+    print(magnitude)
+    print("normalised gradient vector")
+    print(gradient)
+    print("\nGRADIENT COMPUTATION DONE\n")
+    
+    # Return the normalised gradient and its magnitude
+    return gradient, magnitude
+
+
 def main():
     
     brain = createDNN()
-    
-    stepsize = 0.1
     gameSettings = {"maxStepsPerApple": 25, "gui":False, "fps":10, "iterations":10}
     
     with brain.session:
-    
-        dim = len(brain)
-        gradient = np.zeros(dim)
-    
-        print("Measure initial game performance ...")
-        currentScore, currentWon, currentDuration = AgentDNN(brain, preprocessGameState).run(**gameSettings)
-        
-        for index, value in enumerate(brain):
-        
-            print(f"Dimension {index+1}/{dim}.")
-            print("Measure game performance")
-            
-            brain[index] = value + stepsize
-            
-            nextScore, nextWon, nextDuration = AgentDNN(brain, preprocessGameState).run(**gameSettings)
-            
-            gradient[index] = (nextDuration - currentDuration)/stepsize + (nextScore - currentScore)/stepsize + (nextWon - currentWon)/stepsize
-            
-            print(f"Current gradient element: {gradient[index]}")
-            
-            brain[index] = value
-            
-    print("Gradient computation done.")
-    print(gradient)
+        _, _ = getGradient(brain, gameSettings)
     
 if __name__ == "__main__":
     main()
