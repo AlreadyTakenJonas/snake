@@ -121,7 +121,7 @@ def main():
         brain += gradient
         end = time.time()
         additionTime = end - start
-        print("Adding took {additionTime} seconds.")
+        print(f"Adding took {additionTime} seconds.")
         
         gradient2, magnitude2 = getGradient(brain, gameSettings)
         
