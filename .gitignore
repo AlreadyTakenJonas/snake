@@ -3,3 +3,4 @@ conda_env/
 **/Snake.egg-info/
 build/
 dist/
+.spyproject/
